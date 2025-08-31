@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Tuvuke Hub</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .profile-completion {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        
+        .form-validation {
+            border-left: 3px solid #28a745;
+            background-color: #d4edda;
+        }
+        
+        .form-validation.error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .phone-format-hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .progress-indicator {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-custom {
+            height: 100%;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'scholarships:student_dashboard' %}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                Tuvuke Hub
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'scholarships:student_dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'scholarships:search_students' %}">
+                            <i class="fas fa-search me-1"></i>Search Students
+                        </a>
+                    </li>
+                </ul>
+                
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            {{ user.first_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'scholarships:student_profile' %}">
+                                <i class="fas fa-user-circle me-2"></i>My Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'scholarships:update_student_profile' %}">
+                                <i class="fas fa-edit me-2"></i>Edit Profile
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'scholarships:register_student' %}">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin:login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'info' %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body bg-primary text-white">
+                        <h1 class="card-title mb-0">
+                            <i class="fas fa-user-plus me-2"></i>
+                            {{ page_title }}
+                        </h1>
+                        <p class="card-text mt-2 mb-0">
+                            Create your student profile to access scholarship opportunities across Kenya.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="row">
+            <div class="col-12">
+                <form method="post" enctype="multipart/form-data" id="registrationForm" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- User Authentication Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-key me-2"></i>
+                                Account Information
+                            </h5>
+                            <small class="text-muted">Create your login credentials</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label required-field">
+                                        Username
+                                    </label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.username.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        Choose a unique username for login
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label required-field">
+                                        Email Address
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.email.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        We'll use this for important notifications
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label required-field">
+                                        Password
+                                    </label>
+                                    {{ form.password1 }}
+                                    {% if form.password1.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.password1.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        Minimum 8 characters, include numbers and letters
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label required-field">
+                                        Confirm Password
+                                    </label>
+                                    {{ form.password2 }}
+                                    {% if form.password2.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.password2.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        Enter the same password again
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user me-2"></i>
+                                Personal Information
+                            </h5>
+                            <small class="text-muted">Your basic personal details</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label required-field">
+                                        First Name
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.first_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label required-field">
+                                        Last Name
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.last_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.other_names.id_for_label }}" class="form-label">
+                                        Other Names
+                                    </label>
+                                    {{ form.other_names }}
+                                    {% if form.other_names.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.other_names.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Optional middle names</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.date_of_birth.id_for_label }}" class="form-label required-field">
+                                        Date of Birth
+                                    </label>
+                                    {{ form.date_of_birth }}
+                                    {% if form.date_of_birth.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.date_of_birth.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Format: YYYY-MM-DD</div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.gender.id_for_label }}" class="form-label required-field">
+                                        Gender
+                                    </label>
+                                    {{ form.gender }}
+                                    {% if form.gender.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.gender.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.national_id.id_for_label }}" class="form-label required-field">
+                                        National ID
+                                    </label>
+                                    {{ form.national_id }}
+                                    {% if form.national_id.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.national_id.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">8-digit Kenyan National ID</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-phone me-2"></i>
+                                Contact Information
+                            </h5>
+                            <small class="text-muted">How we can reach you</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label required-field">
+                                        Phone Number
+                                    </label>
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.phone_number.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="phone-format-hint">
+                                        Format: 0712345678 or +254712345678
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.alternative_phone.id_for_label }}" class="form-label">
+                                        Alternative Phone
+                                    </label>
+                                    {{ form.alternative_phone }}
+                                    {% if form.alternative_phone.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.alternative_phone.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Optional backup contact</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                Location Information
+                            </h5>
+                            <small class="text-muted">Your geographic location</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.county.id_for_label }}" class="form-label required-field">
+                                        County
+                                    </label>
+                                    {{ form.county }}
+                                    {% if form.county.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.county.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.sub_county.id_for_label }}" class="form-label">
+                                        Sub County
+                                    </label>
+                                    {{ form.sub_county }}
+                                    {% if form.sub_county.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.sub_county.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.ward.id_for_label }}" class="form-label">
+                                        Ward
+                                    </label>
+                                    {{ form.ward }}
+                                    {% if form.ward.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.ward.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                                        Village/Location
+                                    </label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.location.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="{{ form.postal_address.id_for_label }}" class="form-label">
+                                        Postal Address
+                                    </label>
+                                    {{ form.postal_address }}
+                                    {% if form.postal_address.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.postal_address.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">P.O. Box and postal code</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Education Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-graduation-cap me-2"></i>
+                                Education Information
+                            </h5>
+                            <small class="text-muted">Your current academic status</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.current_education_level.id_for_label }}" class="form-label required-field">
+                                        Current Education Level
+                                    </label>
+                                    {{ form.current_education_level }}
+                                    {% if form.current_education_level.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.current_education_level.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.current_institution.id_for_label }}" class="form-label required-field">
+                                        Current Institution
+                                    </label>
+                                    {{ form.current_institution }}
+                                    {% if form.current_institution.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.current_institution.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">School/College/University name</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.course_of_study.id_for_label }}" class="form-label required-field">
+                                        Course of Study
+                                    </label>
+                                    {{ form.course_of_study }}
+                                    {% if form.course_of_study.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.course_of_study.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.year_of_study.id_for_label }}" class="form-label">
+                                        Year of Study
+                                    </label>
+                                    {{ form.year_of_study }}
+                                    {% if form.year_of_study.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.year_of_study.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.expected_graduation_year.id_for_label }}" class="form-label">
+                                        Expected Graduation Year
+                                    </label>
+                                    {{ form.expected_graduation_year }}
+                                    {% if form.expected_graduation_year.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.expected_graduation_year.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Academic Performance Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Academic Performance
+                            </h5>
+                            <small class="text-muted">Your previous academic performance (optional)</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.previous_gpa.id_for_label }}" class="form-label">
+                                        Previous GPA
+                                    </label>
+                                    {{ form.previous_gpa }}
+                                    {% if form.previous_gpa.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.previous_gpa.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">On a 4.0 scale</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.previous_percentage.id_for_label }}" class="form-label">
+                                        Previous Percentage
+                                    </label>
+                                    {{ form.previous_percentage }}
+                                    {% if form.previous_percentage.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.previous_percentage.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Average percentage score</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                Financial Information
+                            </h5>
+                            <small class="text-muted">Family financial background</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.family_income_annual.id_for_label }}" class="form-label">
+                                        Annual Family Income (KES)
+                                    </label>
+                                    {{ form.family_income_annual }}
+                                    {% if form.family_income_annual.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.family_income_annual.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Total household income per year</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.number_of_dependents.id_for_label }}" class="form-label">
+                                        Number of Dependents
+                                    </label>
+                                    {{ form.number_of_dependents }}
+                                    {% if form.number_of_dependents.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.number_of_dependents.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">People financially dependent on family</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Circumstances Section -->
+                    <div class="card mb-4">
+                        <div class="card-header form-section">
+                            <h5 class="mb-0">
+                                <i class="fas fa-heart me-2"></i>
+                                Special Circumstances
+                            </h5>
+                            <small class="text-muted">Additional considerations (optional)</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.disability_status.id_for_label }}" class="form-label">
+                                        Disability Status
+                                    </label>
+                                    {{ form.disability_status }}
+                                    {% if form.disability_status.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.disability_status.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.profile_photo.id_for_label }}" class="form-label">
+                                        Profile Photo
+                                    </label>
+                                    {{ form.profile_photo }}
+                                    {% if form.profile_photo.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.profile_photo.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">Upload a recent photo (optional)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_orphan }}
+                                        <label class="form-check-label" for="{{ form.is_orphan.id_for_label }}">
+                                            I am an orphan
+                                        </label>
+                                    </div>
+                                    {% if form.is_orphan.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.is_orphan.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_single_parent_child }}
+                                        <label class="form-check-label" for="{{ form.is_single_parent_child.id_for_label }}">
+                                            I am from a single parent family
+                                        </label>
+                                    </div>
+                                    {% if form.is_single_parent_child.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.is_single_parent_child.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_child_headed_household }}
+                                        <label class="form-check-label" for="{{ form.is_child_headed_household.id_for_label }}">
+                                            I head a child-headed household
+                                        </label>
+                                    </div>
+                                    {% if form.is_child_headed_household.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.is_child_headed_household.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-user-plus me-2"></i>
+                                {{ submit_text }}
+                            </button>
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    Already have an account? 
+                                    <a href="{% url 'admin:login' %}" class="text-decoration-none">Login here</a>
+                                </small>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Want a quicker process? 
+                                    <a href="{% url 'scholarships:quick_register_student' %}" class="text-decoration-none">Quick Registration</a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Form validation and enhancement
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registrationForm');
+            const phoneInput = document.getElementById('{{ form.phone_number.id_for_label }}');
+            const altPhoneInput = document.getElementById('{{ form.alternative_phone.id_for_label }}');
+            const nationalIdInput = document.getElementById('{{ form.national_id.id_for_label }}');
+            
+            // Phone number formatting
+            function formatPhoneNumber(input) {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    
+                    if (value.startsWith('0') && value.length === 10) {
+                        value = '254' + value.slice(1);
+                    }
+                    
+                    if (value.startsWith('254') && value.length === 12) {
+                        e.target.value = '+' + value;
+                    } else if (value.length === 9) {
+                        e.target.value = '+254' + value;
+                    }
+                });
+            }
+            
+            if (phoneInput) formatPhoneNumber(phoneInput);
+            if (altPhoneInput) formatPhoneNumber(altPhoneInput);
+            
+            // National ID validation
+            if (nationalIdInput) {
+                nationalIdInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 8) {
+                        value = value.slice(0, 8);
+                    }
+                    e.target.value = value;
+                });
+            }
+            
+            // Form submission validation
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                const requiredFields = form.querySelectorAll('[required]');
+                
+                requiredFields.forEach(function(field) {
+                    if (!field.value.trim()) {
+                        field.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        field.classList.remove('is-invalid');
+                        field.classList.add('is-valid');
+                    }
+                });
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields marked with *');
+                    return false;
+                }
+            });
+            
+            // Dynamic sub-county loading
+            const countySelect = document.getElementById('{{ form.county.id_for_label }}');
+            const subCountyInput = document.getElementById('{{ form.sub_county.id_for_label }}');
+            
+            if (countySelect && subCountyInput) {
+                countySelect.addEventListener('change', function() {
+                    const countyId = this.value;
+                    if (countyId) {
+                        // This would make an AJAX call to load sub-counties
+                        // For now, just clear the sub-county field
+                        subCountyInput.value = '';
+                        subCountyInput.placeholder = 'Loading sub-counties...';
+                        
+                        // Simulate AJAX call
+                        setTimeout(() => {
+                            subCountyInput.placeholder = 'Enter your sub-county';
+                        }, 500);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - TUVUKE Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scholarship-card {
+        transition: transform 0.2s ease-in-out;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        overflow: hidden;
+    }
+    
+    .scholarship-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .scholarship-amount {
+        color: #28a745;
+        font-weight: bold;
+        font-size: 1.25rem;
+    }
+    
+    .deadline-badge {
+        background-color: #dc3545;
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .match-score {
+        border-radius: 50px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .match-excellent { background-color: #d4edda; color: #155724; }
+    .match-good { background-color: #d1ecf1; color: #0c5460; }
+    .match-fair { background-color: #fff3cd; color: #856404; }
+    .match-poor { background-color: #f8d7da; color: #721c24; }
+    
+    .filter-card {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+    }
+    
+    .provider-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    
+    .scholarship-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+    }
+    
+    .scholarship-tag {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .featured-badge {
+        background-color: #ffc107;
+        color: #212529;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="filter-card sticky-top" style="top: 1rem;">
+                <h5 class="mb-3"><i class="fas fa-filter"></i> Filter Scholarships</h5>
+                
+                <form method="get" id="filterForm">
+                    <!-- Search -->
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               id="search" 
+                               name="search" 
+                               value="{{ current_filters.search }}"
+                               placeholder="Search scholarships...">
+                    </div>
+                    
+                    <!-- County Filter -->
+                    <div class="mb-3">
+                        <label for="county" class="form-label">County</label>
+                        <select class="form-select form-select-sm" id="county" name="county">
+                            <option value="">All Counties</option>
+                            {% for county in counties %}
+                                <option value="{{ county.id }}" 
+                                        {% if current_filters.county == county.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ county.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Education Level -->
+                    <div class="mb-3">
+                        <label for="education_level" class="form-label">Education Level</label>
+                        <select class="form-select form-select-sm" id="education_level" name="education_level">
+                            <option value="">All Levels</option>
+                            {% for value, label in education_levels %}
+                                <option value="{{ value }}" 
+                                        {% if current_filters.education_level == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Scholarship Type -->
+                    <div class="mb-3">
+                        <label for="scholarship_type" class="form-label">Type</label>
+                        <select class="form-select form-select-sm" id="scholarship_type" name="scholarship_type">
+                            <option value="">All Types</option>
+                            {% for value, label in scholarship_types %}
+                                <option value="{{ value }}" 
+                                        {% if current_filters.scholarship_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Provider -->
+                    <div class="mb-3">
+                        <label for="provider" class="form-label">Provider</label>
+                        <select class="form-select form-select-sm" id="provider" name="provider">
+                            <option value="">All Providers</option>
+                            {% for provider in providers %}
+                                <option value="{{ provider.id }}" 
+                                        {% if current_filters.provider == provider.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ provider.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Amount Range -->
+                    <div class="mb-3">
+                        <label class="form-label">Amount Range (KES)</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" 
+                                       class="form-control form-control-sm" 
+                                       name="min_amount" 
+                                       value="{{ current_filters.min_amount }}"
+                                       placeholder="Min">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" 
+                                       class="form-control form-control-sm" 
+                                       name="max_amount" 
+                                       value="{{ current_filters.max_amount }}"
+                                       placeholder="Max">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Special Requirements -->
+                    <div class="mb-3">
+                        <label class="form-label">Special Requirements</label>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="for_orphans" 
+                                   value="true"
+                                   id="for_orphans"
+                                   {% if current_filters.for_orphans == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="for_orphans">
+                                For Orphans Only
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="for_disabled" 
+                                   value="true"
+                                   id="for_disabled"
+                                   {% if current_filters.for_disabled == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="for_disabled">
+                                For Disabled Students
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   name="renewable" 
+                                   value="true"
+                                   id="renewable"
+                                   {% if current_filters.renewable == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="renewable">
+                                Renewable Scholarships
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Gender -->
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="radio" 
+                                   name="gender" 
+                                   value=""
+                                   id="gender_all"
+                                   {% if current_filters.gender == '' %}checked{% endif %}>
+                            <label class="form-check-label" for="gender_all">
+                                All Genders
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="radio" 
+                                   name="gender" 
+                                   value="male"
+                                   id="gender_male"
+                                   {% if current_filters.gender == 'male' %}checked{% endif %}>
+                            <label class="form-check-label" for="gender_male">
+                                Male Only
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="radio" 
+                                   name="gender" 
+                                   value="female"
+                                   id="gender_female"
+                                   {% if current_filters.gender == 'female' %}checked{% endif %}>
+                            <label class="form-check-label" for="gender_female">
+                                Female Only
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sort By -->
+                    <div class="mb-3">
+                        <label for="sort" class="form-label">Sort By</label>
+                        <select class="form-select form-select-sm" id="sort" name="sort">
+                            {% for value, label in sort_options %}
+                                <option value="{{ value }}" 
+                                        {% if current_filters.sort == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Filter Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'scholarships:scholarship_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i> Clear All
+                        </a>
+                    </div>
+                </form>
+                
+                <!-- Featured Scholarships -->
+                {% if featured_scholarships %}
+                <div class="mt-4">
+                    <h6><i class="fas fa-star text-warning"></i> Featured</h6>
+                    {% for scholarship in featured_scholarships %}
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-1" style="font-size: 0.8rem;">
+                                    <a href="#" class="text-decoration-none">{{ scholarship.title|truncatechars:30 }}</a>
+                                </h6>
+                                <p class="text-muted mb-1" style="font-size: 0.7rem;">
+                                    {{ scholarship.provider.name|truncatechars:20 }}
+                                </p>
+                                <div class="text-success" style="font-size: 0.7rem;">
+                                    KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ page_title }}</h2>
+                    <p class="text-muted mb-0">
+                        Showing {{ scholarships|length }} of {{ total_scholarships }} scholarships
+                        {% if active_scholarships %}
+                            ({{ active_scholarships }} active)
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Results -->
+            {% if scholarships %}
+                <div class="row">
+                    {% for scholarship in scholarships %}
+                        {% if has_student_profile and scholarships_with_scores %}
+                            {% for item in scholarships_with_scores %}
+                                {% if item.scholarship.id == scholarship.id %}
+                                    {% with match_score=item.match_score %}
+                        {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card scholarship-card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-start p-3">
+                                    <div class="d-flex align-items-center">
+                                        {% if scholarship.provider.logo %}
+                                            <img src="{{ scholarship.provider.logo.url }}" 
+                                                 alt="{{ scholarship.provider.name }}" 
+                                                 class="provider-logo me-2">
+                                        {% else %}
+                                            <div class="provider-logo me-2 bg-secondary d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-university text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <small class="text-muted">{{ scholarship.provider.name }}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if scholarship.is_featured %}
+                                        <span class="featured-badge">
+                                            <i class="fas fa-star"></i> Featured
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body p-3">
+                                    <h5 class="card-title">
+                                        <a href="#" class="text-decoration-none">{{ scholarship.title }}</a>
+                                    </h5>
+                                    
+                                    <div class="scholarship-amount mb-2">
+                                        KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}
+                                        {% if scholarship.renewable %}
+                                            <small class="text-muted">(Renewable)</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="card-text text-muted small">
+                                        {{ scholarship.description|truncatechars:120 }}
+                                    </p>
+                                    
+                                    <!-- Match Score for logged-in students -->
+                                    {% if has_student_profile and match_score is not None %}
+                                        <div class="mb-2">
+                                            {% if match_score >= 90 %}
+                                                <span class="match-score match-excellent">
+                                                    {{ match_score }}% Match - Excellent!
+                                                </span>
+                                            {% elif match_score >= 70 %}
+                                                <span class="match-score match-good">
+                                                    {{ match_score }}% Match - Good
+                                                </span>
+                                            {% elif match_score >= 50 %}
+                                                <span class="match-score match-fair">
+                                                    {{ match_score }}% Match - Fair
+                                                </span>
+                                            {% else %}
+                                                <span class="match-score match-poor">
+                                                    {{ match_score }}% Match - Poor
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Scholarship Tags -->
+                                    <div class="scholarship-tags mb-3">
+                                        <span class="scholarship-tag">{{ scholarship.get_scholarship_type_display }}</span>
+                                        {% if scholarship.target_education_levels %}
+                                            {% for level in scholarship.target_education_levels|slice:":2" %}
+                                                <span class="scholarship-tag">{{ level|title }}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if scholarship.for_orphans_only %}
+                                            <span class="scholarship-tag">Orphans</span>
+                                        {% endif %}
+                                        {% if scholarship.for_disabled_only %}
+                                            <span class="scholarship-tag">Disabled</span>
+                                        {% endif %}
+                                        {% if scholarship.for_females_only %}
+                                            <span class="scholarship-tag">Female</span>
+                                        {% elif scholarship.for_males_only %}
+                                            <span class="scholarship-tag">Male</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer d-flex justify-content-between align-items-center p-3">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            Deadline: {{ scholarship.application_deadline|date:"M d, Y" }}
+                                        </small>
+                                        {% if scholarship.days_until_deadline <= 7 %}
+                                            <br><span class="deadline-badge">
+                                                {{ scholarship.days_until_deadline }} days left
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div>
+                                        <a href="#" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if has_student_profile and scholarships_with_scores %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <nav aria-label="Scholarship pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <!-- No Results -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-3x text-muted"></i>
+                    </div>
+                    <h4>No scholarships found</h4>
+                    <p class="text-muted">
+                        Try adjusting your search criteria or 
+                        <a href="{% url 'scholarships:scholarship_list' %}">view all scholarships</a>.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form when filters change (optional)
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('filterForm');
+        const inputs = form.querySelectorAll('select, input[type="checkbox"], input[type="radio"]');
+        
+        inputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // You can uncomment this to auto-submit on change
+                // form.submit();
+            });
+        });
+        
+        // Clear individual filters
+        const clearButtons = document.querySelectorAll('.clear-filter');
+        clearButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filterName = this.dataset.filter;
+                const input = form.querySelector(`[name="${filterName}"]`);
+                if (input) {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
