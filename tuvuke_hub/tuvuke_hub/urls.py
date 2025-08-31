@@ -20,6 +20,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
+from scholarships.admin import admin_site
 
 def home_redirect(request):
     """Redirect root URL to student dashboard or registration"""
@@ -28,7 +29,8 @@ def home_redirect(request):
     return redirect('scholarships:register_student')
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("admin/", admin.site.urls),  # Default Django admin
+    path("tuvuke-admin/", admin_site.urls),  # Custom admin with analytics
     path("", home_redirect, name='home'),  # Root URL redirects appropriately
     path("scholarships/", include('scholarships.urls')),  # Scholarships app URLs
 ]

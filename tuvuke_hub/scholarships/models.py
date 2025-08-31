@@ -613,6 +613,23 @@ class Scholarship(models.Model):
         help_text="SEO meta description"
     )
     
+    # Source tracking
+    source = models.CharField(
+        max_length=20,
+        choices=[
+            ('manual', 'Manual Entry'),
+            ('scraper', 'Web Scraper'),
+            ('import', 'Data Import'),
+            ('api', 'API Integration'),
+        ],
+        default='manual',
+        help_text="Source of this scholarship record"
+    )
+    source_url = models.URLField(
+        blank=True,
+        help_text="Original URL if scraped from web"
+    )
+    
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

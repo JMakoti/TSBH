@@ -2,10 +2,133 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.db.models import Count, Sum, Avg, Q
+from django.utils import timezone
+from datetime import timedelta
 from .models import (
     County, Student, Provider, Scholarship, Application,
     Document, Disbursement, Notification, AuditLog
 )
+
+
+class TuvukeAdminSite(admin.AdminSite):
+    site_header = "Tuvuke Hub Administration"
+    site_title = "Tuvuke Hub Admin"
+    index_title = "Welcome to Tuvuke Hub Administration"
+    
+    def index(self, request, extra_context=None):
+        """
+        Override the default admin index view to include analytics data
+        """
+        extra_context = extra_context or {}
+        
+        # Calculate analytics data
+        analytics = self.get_analytics_data()
+        extra_context['analytics'] = analytics
+        
+        return super().index(request, extra_context)
+    
+    def get_analytics_data(self):
+        """
+        Calculate analytics data for the dashboard
+        """
+        now = timezone.now()
+        thirty_days_ago = now - timedelta(days=30)
+        
+        # Basic counts
+        total_students = Student.objects.count()
+        total_scholarships = Scholarship.objects.count()
+        total_applications = Application.objects.count()
+        total_providers = Provider.objects.count()
+        counties_represented = County.objects.filter(students__isnull=False).distinct().count()
+        
+        # Financial data
+        total_disbursed = Disbursement.objects.filter(
+            status='completed'
+        ).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        total_scholarship_value = Scholarship.objects.aggregate(
+            total=Sum('total_budget')
+        )['total'] or 0
+        
+        average_award = Scholarship.objects.aggregate(
+            avg=Avg('amount_per_beneficiary')
+        )['avg'] or 0
+        
+        # Application statistics
+        application_stats = Application.objects.aggregate(
+            submitted=Count('id', filter=Q(status='submitted')),
+            approved=Count('id', filter=Q(status='approved')),
+            under_review=Count('id', filter=Q(status='under_review'))
+        )
+        
+        # Calculate success rate
+        total_decided = Application.objects.filter(
+            status__in=['approved', 'rejected']
+        ).count()
+        approved_apps = application_stats['approved']
+        success_rate = (approved_apps / total_decided * 100) if total_decided > 0 else 0
+        
+        # Scholarship statistics
+        active_scholarships = Scholarship.objects.filter(status='active').count()
+        verified_providers = Provider.objects.filter(is_verified=True).count()
+        
+        # Student demographics
+        student_stats = Student.objects.aggregate(
+            verified=Count('id', filter=Q(is_verified=True)),
+            female=Count('id', filter=Q(gender='F')),
+            disabled=Count('id', filter=~Q(disability_status='none')),
+            orphaned=Count('id', filter=Q(is_orphan=True))
+        )
+        
+        female_percentage = (student_stats['female'] / total_students * 100) if total_students > 0 else 0
+        
+        # Recent activity (last 30 days)
+        recent_stats = {
+            'new_students_month': Student.objects.filter(
+                created_at__gte=thirty_days_ago
+            ).count(),
+            'new_applications_month': Application.objects.filter(
+                created_at__gte=thirty_days_ago
+            ).count(),
+            'new_scholarships_month': Scholarship.objects.filter(
+                created_at__gte=thirty_days_ago
+            ).count(),
+            'disbursements_month': Disbursement.objects.filter(
+                created_at__gte=thirty_days_ago,
+                status='completed'
+            ).aggregate(total=Sum('amount'))['total'] or 0
+        }
+        
+        return {
+            'total_students': total_students,
+            'total_scholarships': total_scholarships,
+            'total_applications': total_applications,
+            'total_providers': total_providers,
+            'counties_represented': counties_represented,
+            'total_disbursed': total_disbursed,
+            'total_scholarship_value': total_scholarship_value,
+            'average_award': average_award,
+            'submitted_applications': application_stats['submitted'],
+            'approved_applications': application_stats['approved'],
+            'under_review_applications': application_stats['under_review'],
+            'success_rate': success_rate,
+            'active_scholarships': active_scholarships,
+            'verified_providers': verified_providers,
+            'verified_students': student_stats['verified'],
+            'female_students': student_stats['female'],
+            'female_percentage': female_percentage,
+            'disabled_students': student_stats['disabled'],
+            'orphaned_students': student_stats['orphaned'],
+            'last_updated': now,
+            **recent_stats
+        }
+
+
+# Create custom admin site instance
+admin_site = TuvukeAdminSite(name='tuvuke_admin')
 
 
 @admin.register(County)
@@ -80,6 +203,8 @@ class ProviderAdmin(admin.ModelAdmin):
     search_fields = ['name', 'email', 'description']
     readonly_fields = ['slug', 'created_at', 'updated_at']
     prepopulated_fields = {'slug': ('name',)}
+    actions = ['mark_as_verified']
+    
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'slug', 'provider_type', 'funding_source')
@@ -108,19 +233,36 @@ class ProviderAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
+    
+    def mark_as_verified(self, request, queryset):
+        """Mark selected providers as verified"""
+        from django.utils import timezone
+        
+        updated_count = 0
+        for provider in queryset:
+            if not provider.is_verified:
+                provider.is_verified = True
+                provider.verification_date = timezone.now()
+                provider.save()
+                updated_count += 1
+        
+        if updated_count == 1:
+            message = "1 provider was successfully marked as verified."
+        else:
+            message = f"{updated_count} providers were successfully marked as verified."
+        
+        self.message_user(request, message)
+    
+    mark_as_verified.short_description = "Mark selected providers as verified"
 
 
 @admin.register(Scholarship)
 class ScholarshipAdmin(admin.ModelAdmin):
     list_display = [
-        'title', 'provider', 'scholarship_type', 'amount_per_beneficiary',
-        'number_of_awards', 'application_deadline', 'status', 'is_featured'
+        'title', 'provider', 'deadline', 'is_verified', 'is_active'
     ]
-    list_filter = [
-        'scholarship_type', 'status', 'is_featured', 'provider',
-        'coverage_type', 'renewable'
-    ]
-    search_fields = ['title', 'description', 'provider__name']
+    list_filter = ['provider__is_verified', 'target_counties']
+    search_fields = ['title']
     readonly_fields = [
         'slug', 'view_count', 'application_count', 'is_active',
         'days_until_deadline', 'created_at', 'updated_at'
@@ -163,13 +305,26 @@ class ScholarshipAdmin(admin.ModelAdmin):
         }),
         ('Status and SEO', {
             'fields': ('status', 'is_featured', 'view_count', 'application_count',
-                      'tags', 'meta_description')
+                      'tags', 'meta_description', 'source', 'source_url')
         }),
         ('Metadata', {
             'fields': ('created_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         })
     )
+
+    def deadline(self, obj):
+        """Display formatted deadline"""
+        return obj.application_deadline.strftime('%Y-%m-%d %H:%M') if obj.application_deadline else '-'
+    deadline.short_description = 'Deadline'
+    deadline.admin_order_field = 'application_deadline'
+    
+    def is_verified(self, obj):
+        """Display verification status based on provider"""
+        return obj.provider.is_verified
+    is_verified.boolean = True
+    is_verified.short_description = 'Is Verified'
+    is_verified.admin_order_field = 'provider__is_verified'
 
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = list(self.readonly_fields)
@@ -311,3 +466,15 @@ class AuditLogAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# Register all models with both default admin and custom admin site
+admin_site.register(County, CountyAdmin)
+admin_site.register(Student, StudentAdmin)
+admin_site.register(Provider, ProviderAdmin)
+admin_site.register(Scholarship, ScholarshipAdmin)
+admin_site.register(Application, ApplicationAdmin)
+admin_site.register(Document, DocumentAdmin)
+admin_site.register(Disbursement, DisbursementAdmin)
+admin_site.register(Notification, NotificationAdmin)
+admin_site.register(AuditLog, AuditLogAdmin)

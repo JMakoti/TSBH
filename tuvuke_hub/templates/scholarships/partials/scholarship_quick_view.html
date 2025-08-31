@@ -1,0 +1,604 @@
+<!-- Quick view modal for scholarship details -->
+<div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+        <i class="fas fa-graduation-cap me-2"></i>
+        {{ scholarship.title }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <!-- Scholarship Header Info -->
+    <div class="scholarship-header-info mb-4">
+        <div class="row">
+            <div class="col-md-8">
+                <h6 class="text-primary mb-2">
+                    <i class="fas fa-building me-1"></i>
+                    {{ scholarship.provider.name }}
+                </h6>
+                {% if scholarship.provider.website %}
+                <p class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-link me-1"></i>
+                        <a href="{{ scholarship.provider.website }}" target="_blank" class="text-decoration-none">
+                            {{ scholarship.provider.website }}
+                        </a>
+                    </small>
+                </p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="amount-display">
+                    <div class="h4 text-success mb-1">KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}</div>
+                    <small class="text-muted">per beneficiary</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Details Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="detail-card">
+                <h6 class="detail-title">
+                    <i class="fas fa-calendar-alt text-warning"></i>
+                    Application Deadline
+                </h6>
+                <p class="detail-value">
+                    {{ scholarship.application_deadline|date:"F d, Y" }}
+                    <span class="badge {% if scholarship.days_until_deadline <= 7 %}bg-danger{% elif scholarship.days_until_deadline <= 30 %}bg-warning{% else %}bg-success{% endif %} ms-2">
+                        {{ scholarship.days_until_deadline }} days left
+                    </span>
+                </p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="detail-card">
+                <h6 class="detail-title">
+                    <i class="fas fa-users text-info"></i>
+                    Available Awards
+                </h6>
+                <p class="detail-value">
+                    {{ scholarship.number_of_awards }} scholarship{{ scholarship.number_of_awards|pluralize }}
+                    {% if scholarship.renewable %}
+                        <span class="badge bg-info ms-2">Renewable</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Score for Authenticated Users -->
+    {% if user_student and match_score is not None %}
+    <div class="match-score-section mb-4">
+        <div class="match-score-card {% if match_score >= 80 %}high-match{% elif match_score >= 60 %}medium-match{% else %}low-match{% endif %}">
+            <div class="row align-items-center">
+                <div class="col-8">
+                    <h6 class="mb-1">Your Compatibility Score</h6>
+                    <p class="mb-0 text-muted">Based on your profile and this scholarship's requirements</p>
+                </div>
+                <div class="col-4 text-end">
+                    <div class="match-percentage">{{ match_score|floatformat:0 }}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Eligibility Breakdown -->
+        {% if eligibility_details %}
+        <div class="eligibility-breakdown mt-3">
+            <h6 class="mb-3">Eligibility Breakdown</h6>
+            <div class="row">
+                {% if eligibility_details.meets_education_level is not None %}
+                <div class="col-6 mb-2">
+                    <div class="eligibility-item">
+                        <i class="fas fa-{% if eligibility_details.meets_education_level %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                        Education Level
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if eligibility_details.meets_county is not None %}
+                <div class="col-6 mb-2">
+                    <div class="eligibility-item">
+                        <i class="fas fa-{% if eligibility_details.meets_county %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                        Location
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if eligibility_details.meets_gender is not None %}
+                <div class="col-6 mb-2">
+                    <div class="eligibility-item">
+                        <i class="fas fa-{% if eligibility_details.meets_gender %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                        Gender Requirements
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if eligibility_details.meets_income is not None %}
+                <div class="col-6 mb-2">
+                    <div class="eligibility-item">
+                        <i class="fas fa-{% if eligibility_details.meets_income %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                        Family Income
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if eligibility_details.meets_gpa is not None %}
+                <div class="col-6 mb-2">
+                    <div class="eligibility-item">
+                        <i class="fas fa-{% if eligibility_details.meets_gpa %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                        Academic Performance
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Description -->
+    <div class="description-section mb-4">
+        <h6 class="section-title">
+            <i class="fas fa-info-circle text-primary"></i>
+            Description
+        </h6>
+        <p class="description-text">{{ scholarship.description }}</p>
+    </div>
+
+    <!-- Target Criteria -->
+    <div class="criteria-section mb-4">
+        <h6 class="section-title">
+            <i class="fas fa-bullseye text-success"></i>
+            Target Criteria
+        </h6>
+        
+        <div class="row">
+            <!-- Education Levels -->
+            {% if scholarship.target_education_levels %}
+            <div class="col-md-6 mb-3">
+                <div class="criteria-card">
+                    <h6 class="criteria-title">Education Levels</h6>
+                    <div class="criteria-tags">
+                        {% for level in scholarship.target_education_levels %}
+                        <span class="criteria-tag">{{ level|title }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Counties -->
+            <div class="col-md-6 mb-3">
+                <div class="criteria-card">
+                    <h6 class="criteria-title">Target Counties</h6>
+                    <div class="criteria-tags">
+                        {% if scholarship.target_counties.exists %}
+                            {% for county in scholarship.target_counties.all %}
+                            <span class="criteria-tag">{{ county.get_name_display }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="criteria-tag all-counties">All Counties</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fields of Study -->
+            {% if scholarship.target_fields_of_study %}
+            <div class="col-12 mb-3">
+                <div class="criteria-card">
+                    <h6 class="criteria-title">Fields of Study</h6>
+                    <div class="criteria-tags">
+                        {% for field in scholarship.target_fields_of_study %}
+                        <span class="criteria-tag">{{ field }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Requirements -->
+    <div class="requirements-section mb-4">
+        <h6 class="section-title">
+            <i class="fas fa-clipboard-check text-warning"></i>
+            Requirements
+        </h6>
+        
+        <div class="row">
+            <!-- Academic Requirements -->
+            {% if scholarship.minimum_gpa or scholarship.minimum_percentage %}
+            <div class="col-md-6 mb-3">
+                <div class="requirement-card">
+                    <h6 class="requirement-title">Academic Requirements</h6>
+                    <ul class="requirement-list">
+                        {% if scholarship.minimum_gpa %}
+                        <li>Minimum GPA: {{ scholarship.minimum_gpa }}</li>
+                        {% endif %}
+                        {% if scholarship.minimum_percentage %}
+                        <li>Minimum Grade: {{ scholarship.minimum_percentage }}%</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Financial Requirements -->
+            {% if scholarship.maximum_family_income %}
+            <div class="col-md-6 mb-3">
+                <div class="requirement-card">
+                    <h6 class="requirement-title">Financial Requirements</h6>
+                    <ul class="requirement-list">
+                        <li>Maximum Family Income: KES {{ scholarship.maximum_family_income|floatformat:0 }}</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Age Requirements -->
+            {% if scholarship.minimum_age or scholarship.maximum_age %}
+            <div class="col-md-6 mb-3">
+                <div class="requirement-card">
+                    <h6 class="requirement-title">Age Requirements</h6>
+                    <ul class="requirement-list">
+                        {% if scholarship.minimum_age %}
+                        <li>Minimum Age: {{ scholarship.minimum_age }} years</li>
+                        {% endif %}
+                        {% if scholarship.maximum_age %}
+                        <li>Maximum Age: {{ scholarship.maximum_age }} years</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Special Requirements -->
+            {% if scholarship.for_orphans_only or scholarship.for_disabled_only or scholarship.for_females_only or scholarship.for_males_only %}
+            <div class="col-md-6 mb-3">
+                <div class="requirement-card">
+                    <h6 class="requirement-title">Special Requirements</h6>
+                    <ul class="requirement-list">
+                        {% if scholarship.for_orphans_only %}
+                        <li>For orphans only</li>
+                        {% endif %}
+                        {% if scholarship.for_disabled_only %}
+                        <li>For students with disabilities</li>
+                        {% endif %}
+                        {% if scholarship.for_females_only %}
+                        <li>For female students only</li>
+                        {% endif %}
+                        {% if scholarship.for_males_only %}
+                        <li>For male students only</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Application Timeline -->
+    <div class="timeline-section mb-4">
+        <h6 class="section-title">
+            <i class="fas fa-clock text-info"></i>
+            Application Timeline
+        </h6>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-marker completed"></div>
+                <div class="timeline-content">
+                    <h6>Application Opens</h6>
+                    <p>{{ scholarship.application_start_date|date:"F d, Y" }}</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-marker {% if scholarship.days_until_deadline > 0 %}active{% else %}completed{% endif %}"></div>
+                <div class="timeline-content">
+                    <h6>Application Deadline</h6>
+                    <p>{{ scholarship.application_deadline|date:"F d, Y" }}</p>
+                </div>
+            </div>
+            
+            {% if scholarship.selection_end_date %}
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                    <h6>Selection Process</h6>
+                    <p>{{ scholarship.selection_end_date|date:"F d, Y" }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if scholarship.award_notification_date %}
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                    <h6>Award Notification</h6>
+                    <p>{{ scholarship.award_notification_date|date:"F d, Y" }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Required Documents -->
+    {% if scholarship.required_documents %}
+    <div class="documents-section mb-4">
+        <h6 class="section-title">
+            <i class="fas fa-file-text text-secondary"></i>
+            Required Documents
+        </h6>
+        
+        <div class="document-list">
+            {% for document in scholarship.required_documents %}
+            <div class="document-item">
+                <i class="fas fa-file-alt me-2"></i>
+                {{ document }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal-footer">
+    <div class="d-flex justify-content-between w-100">
+        <div>
+            {% if scholarship.external_application_url %}
+            <a href="{{ scholarship.external_application_url }}" 
+               target="_blank" 
+               class="btn btn-outline-primary">
+                <i class="fas fa-external-link-alt me-1"></i>
+                External Application
+            </a>
+            {% endif %}
+        </div>
+        
+        <div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Close
+            </button>
+            {% if user.is_authenticated %}
+            <button type="button" class="btn btn-success">
+                <i class="fas fa-paper-plane me-1"></i>
+                Apply Now
+            </button>
+            {% else %}
+            <a href="{% url 'scholarships:student_onboarding' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-1"></i>
+                Register to Apply
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Styles -->
+<style>
+.scholarship-header-info {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+}
+
+.amount-display {
+    text-align: right;
+}
+
+.detail-card {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.detail-title {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.detail-value {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.match-score-card {
+    padding: 1rem;
+    border-radius: 10px;
+    border: 2px solid;
+}
+
+.match-score-card.high-match {
+    background: #e8f5e8;
+    border-color: #28a745;
+}
+
+.match-score-card.medium-match {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.match-score-card.low-match {
+    background: #f8d7da;
+    border-color: #dc3545;
+}
+
+.match-percentage {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.eligibility-item {
+    font-size: 0.9rem;
+}
+
+.section-title {
+    margin-bottom: 1rem;
+    color: #333;
+    border-bottom: 2px solid #f1f3f4;
+    padding-bottom: 0.5rem;
+}
+
+.description-text {
+    line-height: 1.6;
+    color: #555;
+}
+
+.criteria-card, .requirement-card {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    height: 100%;
+}
+
+.criteria-title, .requirement-title {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.criteria-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.criteria-tag {
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.criteria-tag.all-counties {
+    background: #d4edda;
+    color: #155724;
+}
+
+.requirement-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requirement-list li {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.9rem;
+}
+
+.requirement-list li:last-child {
+    border-bottom: none;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #dee2e6;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-marker.completed {
+    background: #28a745;
+    box-shadow: 0 0 0 2px #28a745;
+}
+
+.timeline-marker.active {
+    background: #007bff;
+    box-shadow: 0 0 0 2px #007bff;
+    animation: pulse 2s infinite;
+}
+
+.timeline-content h6 {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.timeline-content p {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.document-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.5rem;
+}
+
+.document-item {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+    font-size: 0.9rem;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 2px #007bff, 0 0 0 4px rgba(0, 123, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 2px #007bff, 0 0 0 8px rgba(0, 123, 255, 0.1);
+    }
+    100% {
+        box-shadow: 0 0 0 2px #007bff, 0 0 0 4px rgba(0, 123, 255, 0.3);
+    }
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-marker {
+        left: -1.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+    
+    .document-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-footer .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .modal-footer .d-flex > div {
+        text-align: center;
+    }
+}
+</style>
