@@ -1,0 +1,867 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.css" rel="stylesheet">
+<style>
+    /* Homepage styles */
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 80px 0;
+        margin-bottom: 50px;
+    }
+    
+    .hero-content {
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.3rem;
+        margin-bottom: 40px;
+        opacity: 0.9;
+    }
+    
+    .search-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin: 0 auto;
+        max-width: 900px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-top: -60px;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .search-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .search-header h3 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .search-header p {
+        color: #666;
+        margin: 0;
+    }
+    
+    .search-form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .search-input-group {
+        display: flex;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: border-color 0.3s ease;
+    }
+    
+    .search-input-group:focus-within {
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+    
+    .search-input {
+        flex: 1;
+        border: none;
+        padding: 15px 20px;
+        font-size: 16px;
+        outline: none;
+    }
+    
+    .search-input::placeholder {
+        color: #adb5bd;
+    }
+    
+    .search-icon {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        color: #6c757d;
+        border-left: 1px solid #e9ecef;
+    }
+    
+    .search-button {
+        padding: 15px 30px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        white-space: nowrap;
+    }
+    
+    .search-button:hover {
+        background: #0056b3;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .filter-select {
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+    
+    .filter-select:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+    
+    .search-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .stats-text {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .stats-badges {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .stats-badge {
+        padding: 6px 12px;
+        background: #007bff;
+        color: white;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .results-container {
+        margin-top: 30px;
+    }
+    
+    .scholarship-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .scholarship-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .scholarship-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        padding: 20px;
+        border-bottom: 1px solid #f1f3f4;
+        position: relative;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+    
+    .card-provider {
+        color: #007bff;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+    }
+    
+    .amount-badge {
+        background: #28a745;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .deadline-badge {
+        background: #ffc107;
+        color: #333;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 12px;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .card-description {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .tag {
+        background: #e9ecef;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    
+    .match-score {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #007bff;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    
+    .match-score.high {
+        background: #28a745;
+    }
+    
+    .match-score.medium {
+        background: #ffc107;
+        color: #333;
+    }
+    
+    .match-score.low {
+        background: #dc3545;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+    }
+    
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .pagination {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .pagination button {
+        padding: 10px 15px;
+        border: 2px solid #e9ecef;
+        background: white;
+        color: #333;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination button:hover {
+        border-color: #007bff;
+        color: #007bff;
+    }
+    
+    .pagination button.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+    
+    .no-results i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+    
+    .no-results h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .featured-section {
+        margin-bottom: 50px;
+    }
+    
+    .section-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 15px;
+    }
+    
+    .section-subtitle {
+        font-size: 1.1rem;
+        color: #666;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .search-form {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .scholarship-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .search-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        
+        .card-meta {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    }
+    
+    /* HTMX loading states */
+    .htmx-request {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    
+    .htmx-request .loading-overlay {
+        display: flex;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">Find Your Perfect Scholarship</h1>
+            <p class="hero-subtitle">
+                Discover thousands of scholarship opportunities tailored to your profile. 
+                Start your journey to academic success today.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Search Container -->
+<div class="container">
+    <div class="search-container">
+        <div class="search-header">
+            <h3>Search & Filter Scholarships</h3>
+            <p>Use the filters below to find scholarships that match your profile</p>
+        </div>
+        
+        <!-- Search Form -->
+        <form id="searchForm" 
+              hx-get="{% url 'scholarships:htmx_scholarship_search' %}"
+              hx-target="#searchResults"
+              hx-trigger="input changed delay:500ms, submit"
+              hx-indicator="#loadingIndicator">
+            
+            <!-- Main Search Bar -->
+            <div class="search-form">
+                <div class="search-input-group">
+                    <input type="text" 
+                           name="search" 
+                           class="search-input" 
+                           placeholder="Search by scholarship name, provider, or field of study..."
+                           value="">
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            
+            <!-- Filter Row -->
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label" for="county">County</label>
+                    <select name="county" id="county" class="filter-select">
+                        <option value="">All Counties</option>
+                        {% for county in counties %}
+                        <option value="{{ county.id }}">{{ county.name|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label" for="education_level">Education Level</label>
+                    <select name="education_level" id="education_level" class="filter-select">
+                        <option value="">All Levels</option>
+                        {% for value, label in education_levels %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label" for="scholarship_type">Type</label>
+                    <select name="scholarship_type" id="scholarship_type" class="filter-select">
+                        <option value="">All Types</option>
+                        {% for value, label in scholarship_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label" for="min_grade">Min Grade (GPA)</label>
+                    <select name="min_grade" id="min_grade" class="filter-select">
+                        <option value="">Any Grade</option>
+                        <option value="2.0">2.0+</option>
+                        <option value="2.5">2.5+</option>
+                        <option value="3.0">3.0+</option>
+                        <option value="3.5">3.5+</option>
+                        <option value="3.8">3.8+</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label" for="sort">Sort By</label>
+                    <select name="sort" id="sort" class="filter-select">
+                        <option value="relevance">Relevance</option>
+                        <option value="deadline">Deadline</option>
+                        <option value="amount_high">Amount (High to Low)</option>
+                        <option value="amount_low">Amount (Low to High)</option>
+                        <option value="newest">Newest First</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div class="container">
+    <div id="searchResults">
+        <!-- Initial Results (Featured & Recent) -->
+        <div class="featured-section">
+            <div class="section-header">
+                <h2 class="section-title">Featured Scholarships</h2>
+                <p class="section-subtitle">
+                    Handpicked scholarship opportunities with excellent funding and track record
+                </p>
+            </div>
+            
+            <div class="scholarship-grid">
+                {% for scholarship in featured_scholarships %}
+                <div class="scholarship-card" 
+                     hx-get="{% url 'scholarships:htmx_scholarship_quick_view' %}?id={{ scholarship.id }}"
+                     hx-target="#quickViewModal"
+                     hx-trigger="click">
+                    
+                    <div class="card-header">
+                        <div class="card-provider">{{ scholarship.provider.name }}</div>
+                        <h3 class="card-title">{{ scholarship.title }}</h3>
+                        
+                        <div class="card-meta">
+                            <div class="amount-badge">
+                                KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}
+                            </div>
+                            <div class="deadline-badge">
+                                <i class="fas fa-calendar"></i> 
+                                {{ scholarship.application_deadline|date:"M j, Y" }}
+                            </div>
+                        </div>
+                        
+                        {% if scholarship.is_featured %}
+                        <div class="match-score high">
+                            <i class="fas fa-star"></i> Featured
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body">
+                        <p class="card-description">{{ scholarship.description|truncatewords:25 }}</p>
+                        
+                        <div class="card-tags">
+                            <span class="tag">{{ scholarship.get_scholarship_type_display }}</span>
+                            {% if scholarship.target_counties.exists %}
+                                {% for county in scholarship.target_counties.all|slice:":2" %}
+                                <span class="tag">{{ county.name|title }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="tag">All Counties</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-results">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h3>No Featured Scholarships</h3>
+                    <p>Check back soon for featured opportunities!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recent Scholarships -->
+        <div class="section-header">
+            <h2 class="section-title">Recent Opportunities</h2>
+            <p class="section-subtitle">
+                Latest scholarship opportunities added to our platform
+            </p>
+        </div>
+        
+        <div class="scholarship-grid">
+            {% for scholarship in recent_scholarships %}
+            <div class="scholarship-card"
+                 hx-get="{% url 'scholarships:htmx_scholarship_quick_view' %}?id={{ scholarship.id }}"
+                 hx-target="#quickViewModal"
+                 hx-trigger="click">
+                
+                <div class="card-header">
+                    <div class="card-provider">{{ scholarship.provider.name }}</div>
+                    <h3 class="card-title">{{ scholarship.title }}</h3>
+                    
+                    <div class="card-meta">
+                        <div class="amount-badge">
+                            KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}
+                        </div>
+                        <div class="deadline-badge">
+                            <i class="fas fa-calendar"></i> 
+                            {{ scholarship.application_deadline|date:"M j, Y" }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <p class="card-description">{{ scholarship.description|truncatewords:25 }}</p>
+                    
+                    <div class="card-tags">
+                        <span class="tag">{{ scholarship.get_scholarship_type_display }}</span>
+                        {% if scholarship.target_counties.exists %}
+                            {% for county in scholarship.target_counties.all|slice:":2" %}
+                            <span class="tag">{{ county.name|title }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="tag">All Counties</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>No Recent Scholarships</h3>
+                <p>Use the search above to find available opportunities!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick View Modal Placeholder -->
+<div id="quickViewModal"></div>
+
+<!-- Search Statistics -->
+<div class="container mt-5">
+    <div class="row text-center">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-primary">{{ total_active_scholarships }}</h3>
+                <p>Active Scholarships</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-success">KES 2.5B+</h3>
+                <p>Total Funding Available</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-info">500+</h3>
+                <p>Partner Organizations</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-warning">50K+</h3>
+                <p>Students Helped</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+// HTMX Configuration
+htmx.config.globalViewTransitions = true;
+htmx.config.useTemplateFragments = true;
+
+// Custom JavaScript for enhanced functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search functionality
+    initializeSearch();
+    
+    // Initialize filter interactions
+    initializeFilters();
+    
+    // Initialize keyboard shortcuts
+    initializeKeyboardShortcuts();
+});
+
+function initializeSearch() {
+    const searchInput = document.querySelector('input[name="search"]');
+    const searchForm = document.getElementById('searchForm');
+    
+    // Auto-focus search input
+    if (searchInput) {
+        searchInput.focus();
+    }
+    
+    // Clear search button
+    if (searchInput) {
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn btn-link btn-sm';
+        clearButton.innerHTML = '<i class="fas fa-times"></i>';
+        clearButton.style.display = 'none';
+        clearButton.onclick = function() {
+            searchInput.value = '';
+            htmx.trigger(searchForm, 'submit');
+            this.style.display = 'none';
+        };
+        
+        searchInput.addEventListener('input', function() {
+            clearButton.style.display = this.value ? 'inline-block' : 'none';
+        });
+        
+        searchInput.parentNode.appendChild(clearButton);
+    }
+}
+
+function initializeFilters() {
+    // Reset filters button
+    const filterRow = document.querySelector('.filter-row');
+    if (filterRow) {
+        const resetButton = document.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'btn btn-outline-secondary btn-sm mt-2';
+        resetButton.innerHTML = '<i class="fas fa-undo"></i> Reset Filters';
+        resetButton.onclick = function() {
+            // Clear all form inputs
+            const form = document.getElementById('searchForm');
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.type === 'text' || input.type === 'search') {
+                    input.value = '';
+                } else if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                }
+            });
+            
+            // Trigger search
+            htmx.trigger(form, 'submit');
+        };
+        
+        filterRow.appendChild(resetButton);
+    }
+}
+
+function initializeKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + K to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        
+        // Escape to clear search
+        if (e.key === 'Escape') {
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput && document.activeElement === searchInput) {
+                searchInput.value = '';
+                htmx.trigger(document.getElementById('searchForm'), 'submit');
+            }
+        }
+    });
+}
+
+// HTMX Event Handlers
+document.addEventListener('htmx:beforeRequest', function(event) {
+    // Show loading state
+    const target = document.querySelector(event.detail.target);
+    if (target) {
+        target.classList.add('htmx-request');
+    }
+});
+
+document.addEventListener('htmx:afterRequest', function(event) {
+    // Hide loading state
+    const target = document.querySelector(event.detail.target);
+    if (target) {
+        target.classList.remove('htmx-request');
+    }
+});
+
+document.addEventListener('htmx:responseError', function(event) {
+    console.error('HTMX Error:', event.detail);
+    // Show error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+    errorDiv.innerHTML = `
+        <strong>Error:</strong> Failed to load search results. Please try again.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.search-container');
+    if (container) {
+        container.insertBefore(errorDiv, container.firstChild);
+    }
+});
+
+// Smooth scrolling for search results
+document.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'searchResults') {
+        // Scroll to results
+        const resultsContainer = document.getElementById('searchResults');
+        if (resultsContainer) {
+            resultsContainer.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -4,10 +4,6 @@ Django>=4.2.0,<5.0
 # Environment Management
 django-environ>=0.11.2
 
-# Database
-psycopg2-binary>=2.9.5  # PostgreSQL adapter
-mysqlclient>=2.1.1      # MySQL adapter (optional)
-
 # REST API Development
 djangorestframework>=3.14.0
 django-cors-headers>=4.3.1

@@ -464,42 +464,73 @@ def search_students(request):
 @login_required
 def student_dashboard(request):
     """
-    Student dashboard with profile summary and quick actions.
+    Comprehensive student dashboard with profile summary, applications, and recommendations.
     
     Features:
-    - Profile completion status
-    - Recent applications
-    - Available scholarships
-    - Quick profile actions
+    - Profile information display
+    - Application tracking with status badges
+    - Personalized scholarship recommendations using match scores
+    - Quick actions and statistics
     """
     try:
         student = request.user.student_profile
     except Student.DoesNotExist:
-        messages.error(
-            request, 
-            'Student profile not found. Please complete registration.'
-        )
-        return redirect('register_student')
+        student = None
     
-    # Calculate profile completion
-    completion_percentage = calculate_profile_completion(student)
+    # Initialize context variables
+    applications = []
+    applications_count = 0
+    recommended_scholarships = []
+    recommended_count = 0
     
-    # Get recent applications (if Application model is available)
-    # recent_applications = student.applications.order_by('-created_at')[:5]
-    
-    # Get available scholarships (if Scholarship model is available)
-    # available_scholarships = Scholarship.objects.filter(
-    #     is_active=True,
-    #     application_deadline__gte=timezone.now().date()
-    # )[:5]
+    if student:
+        # Get user's applications with related scholarship data
+        from .models import Application
+        applications = Application.objects.filter(
+            student=student
+        ).select_related(
+            'scholarship', 
+            'scholarship__provider'
+        ).order_by('-application_date')[:10]
+        
+        applications_count = applications.count()
+        
+        # Get personalized scholarship recommendations
+        active_scholarships = Scholarship.objects.filter(
+            is_active=True,
+            application_deadline__gte=timezone.now().date()
+        ).select_related('provider').prefetch_related('target_counties')
+        
+        # Calculate match scores and filter recommendations
+        recommendations_with_scores = []
+        for scholarship in active_scholarships:
+            try:
+                match_score = student.calculate_match_score(scholarship)
+                if match_score >= 40:  # Only show scholarships with decent match
+                    recommendations_with_scores.append({
+                        'scholarship': scholarship,
+                        'match_score': match_score
+                    })
+            except Exception as e:
+                # Skip scholarships that cause calculation errors
+                continue
+        
+        # Sort by match score (highest first) and limit to top 8
+        recommended_scholarships = sorted(
+            recommendations_with_scores, 
+            key=lambda x: x['match_score'], 
+            reverse=True
+        )[:8]
+        
+        recommended_count = len(recommended_scholarships)
     
     context = {
         'student': student,
-        'completion_percentage': completion_percentage,
-        'needs_completion': completion_percentage < 80,
-        'page_title': f'Dashboard - {student.get_full_name()}',
-        # 'recent_applications': recent_applications,
-        # 'available_scholarships': available_scholarships,
+        'applications': applications,
+        'applications_count': applications_count,
+        'recommended_scholarships': recommended_scholarships,
+        'recommended_count': recommended_count,
+        'page_title': f'Dashboard - {request.user.get_full_name() or request.user.username}',
     }
     
     return render(request, 'scholarships/dashboard.html', context)
