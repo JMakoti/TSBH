@@ -241,8 +241,8 @@ class StudentOnboardingView(View):
                 created_at=timezone.now()
             )
             
-            # Log in the user
-            login(request, user)
+            # Log in the user with specified backend
+            login(request, user, backend='scholarships.backends.MultiFieldAuthBackend')
             
             # Clear session data
             self.clear_session_data(request)

@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - TUVUKE Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .update-profile-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px 10px 0 0;
+        text-align: center;
+    }
+    
+    .profile-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+    
+    .profile-header p {
+        margin: 0;
+        opacity: 0.9;
+    }
+    
+    .form-container {
+        background: white;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        padding: 0;
+    }
+    
+    .form-nav {
+        display: flex;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+        overflow-x: auto;
+    }
+    
+    .form-nav-item {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #6c757d;
+        white-space: nowrap;
+        min-width: fit-content;
+    }
+    
+    .form-nav-item.active {
+        color: #28a745;
+        background: white;
+        border-bottom: 2px solid #28a745;
+    }
+    
+    .form-nav-item:hover {
+        color: #28a745;
+        background: white;
+    }
+    
+    .form-section {
+        padding: 2rem;
+        display: none;
+    }
+    
+    .form-section.active {
+        display: block;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        outline: none;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-check-input {
+        margin: 0;
+    }
+    
+    .form-check-label {
+        margin: 0;
+        cursor: pointer;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .error-text {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .btn-update {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 5px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-update:hover {
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+        transform: translateY(-1px);
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 5px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        margin-right: 1rem;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+    
+    .form-actions {
+        background: #f8f9fa;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e9ecef;
+        text-align: right;
+        border-radius: 0 0 10px 10px;
+    }
+    
+    .progress-indicator {
+        background: #e9ecef;
+        height: 4px;
+        border-radius: 2px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .section-header h3 {
+        margin: 0;
+        color: #2c3e50;
+    }
+    
+    .section-header i {
+        color: #28a745;
+        font-size: 1.2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .update-profile-container {
+            margin: 1rem auto;
+            padding: 0 0.5rem;
+        }
+        
+        .profile-header {
+            padding: 1.5rem;
+        }
+        
+        .form-nav {
+            flex-direction: column;
+        }
+        
+        .form-nav-item {
+            text-align: left;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            text-align: center;
+        }
+        
+        .btn-cancel,
+        .btn-update {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="update-profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <h1><i class="fas fa-edit"></i> {{ page_title }}</h1>
+        <p>Update your profile information to improve scholarship matching</p>
+    </div>
+    
+    <!-- Form Container -->
+    <form method="post" enctype="multipart/form-data" class="form-container" id="updateProfileForm">
+        {% csrf_token %}
+        
+        <!-- Progress Indicator -->
+        <div class="progress-indicator" style="margin: 1rem 2rem 0;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <!-- Form Navigation -->
+        <div class="form-nav">
+            <button type="button" class="form-nav-item active" onclick="showSection('personal')">
+                <i class="fas fa-user"></i> Personal Info
+            </button>
+            <button type="button" class="form-nav-item" onclick="showSection('contact')">
+                <i class="fas fa-address-card"></i> Contact Details
+            </button>
+            <button type="button" class="form-nav-item" onclick="showSection('academic')">
+                <i class="fas fa-graduation-cap"></i> Academic Info
+            </button>
+            <button type="button" class="form-nav-item" onclick="showSection('family')">
+                <i class="fas fa-home"></i> Family Details
+            </button>
+            <button type="button" class="form-nav-item" onclick="showSection('photo')">
+                <i class="fas fa-camera"></i> Photo
+            </button>
+        </div>
+        
+        <!-- Personal Information Section -->
+        <div id="personal" class="form-section active">
+            <div class="section-header">
+                <i class="fas fa-user"></i>
+                <h3>Personal Information</h3>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.other_names.id_for_label }}" class="form-label">
+                        Other Names
+                    </label>
+                    {{ form.other_names }}
+                    {% if form.other_names.help_text %}
+                        <div class="help-text">{{ form.other_names.help_text }}</div>
+                    {% endif %}
+                    {% if form.other_names.errors %}
+                        <div class="error-text">{{ form.other_names.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Details Section -->
+        <div id="contact" class="form-section">
+            <div class="section-header">
+                <i class="fas fa-address-card"></i>
+                <h3>Contact Information</h3>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                        Phone Number <span class="required">*</span>
+                    </label>
+                    {{ form.phone_number }}
+                    {% if form.phone_number.help_text %}
+                        <div class="help-text">{{ form.phone_number.help_text }}</div>
+                    {% endif %}
+                    {% if form.phone_number.errors %}
+                        <div class="error-text">{{ form.phone_number.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.alternative_phone.id_for_label }}" class="form-label">
+                        Alternative Phone
+                    </label>
+                    {{ form.alternative_phone }}
+                    {% if form.alternative_phone.help_text %}
+                        <div class="help-text">{{ form.alternative_phone.help_text }}</div>
+                    {% endif %}
+                    {% if form.alternative_phone.errors %}
+                        <div class="error-text">{{ form.alternative_phone.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.county.id_for_label }}" class="form-label">
+                        County
+                    </label>
+                    {{ form.county }}
+                    {% if form.county.errors %}
+                        <div class="error-text">{{ form.county.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.sub_county.id_for_label }}" class="form-label">
+                        Sub County
+                    </label>
+                    {{ form.sub_county }}
+                    {% if form.sub_county.errors %}
+                        <div class="error-text">{{ form.sub_county.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.ward.id_for_label }}" class="form-label">
+                        Ward
+                    </label>
+                    {{ form.ward }}
+                    {% if form.ward.errors %}
+                        <div class="error-text">{{ form.ward.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                        Location/Village
+                    </label>
+                    {{ form.location }}
+                    {% if form.location.errors %}
+                        <div class="error-text">{{ form.location.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.postal_address.id_for_label }}" class="form-label">
+                    Postal Address
+                </label>
+                {{ form.postal_address }}
+                {% if form.postal_address.errors %}
+                    <div class="error-text">{{ form.postal_address.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Academic Information Section -->
+        <div id="academic" class="form-section">
+            <div class="section-header">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>Academic Information</h3>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.current_institution.id_for_label }}" class="form-label">
+                        Current Institution
+                    </label>
+                    {{ form.current_institution }}
+                    {% if form.current_institution.errors %}
+                        <div class="error-text">{{ form.current_institution.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.course_of_study.id_for_label }}" class="form-label">
+                        Course of Study
+                    </label>
+                    {{ form.course_of_study }}
+                    {% if form.course_of_study.errors %}
+                        <div class="error-text">{{ form.course_of_study.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.year_of_study.id_for_label }}" class="form-label">
+                        Year of Study
+                    </label>
+                    {{ form.year_of_study }}
+                    {% if form.year_of_study.errors %}
+                        <div class="error-text">{{ form.year_of_study.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.expected_graduation_year.id_for_label }}" class="form-label">
+                        Expected Graduation Year
+                    </label>
+                    {{ form.expected_graduation_year }}
+                    {% if form.expected_graduation_year.errors %}
+                        <div class="error-text">{{ form.expected_graduation_year.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.previous_gpa.id_for_label }}" class="form-label">
+                        Previous GPA (if applicable)
+                    </label>
+                    {{ form.previous_gpa }}
+                    <div class="help-text">Enter your GPA on a 4.0 scale</div>
+                    {% if form.previous_gpa.errors %}
+                        <div class="error-text">{{ form.previous_gpa.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.previous_percentage.id_for_label }}" class="form-label">
+                        Previous Percentage (if applicable)
+                    </label>
+                    {{ form.previous_percentage }}
+                    <div class="help-text">Enter your percentage score (0-100)</div>
+                    {% if form.previous_percentage.errors %}
+                        <div class="error-text">{{ form.previous_percentage.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Family Details Section -->
+        <div id="family" class="form-section">
+            <div class="section-header">
+                <i class="fas fa-home"></i>
+                <h3>Family & Financial Information</h3>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.family_income_annual.id_for_label }}" class="form-label">
+                        Annual Family Income (KES)
+                    </label>
+                    {{ form.family_income_annual }}
+                    <div class="help-text">Enter your family's total annual income</div>
+                    {% if form.family_income_annual.errors %}
+                        <div class="error-text">{{ form.family_income_annual.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.number_of_dependents.id_for_label }}" class="form-label">
+                        Number of Dependents
+                    </label>
+                    {{ form.number_of_dependents }}
+                    <div class="help-text">Including yourself and siblings</div>
+                    {% if form.number_of_dependents.errors %}
+                        <div class="error-text">{{ form.number_of_dependents.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.disability_status.id_for_label }}" class="form-label">
+                        Disability Status
+                    </label>
+                    {{ form.disability_status }}
+                    {% if form.disability_status.errors %}
+                        <div class="error-text">{{ form.disability_status.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-check">
+                    {{ form.is_orphan }}
+                    <label for="{{ form.is_orphan.id_for_label }}" class="form-check-label">
+                        I am an orphan
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    {{ form.is_single_parent_child }}
+                    <label for="{{ form.is_single_parent_child.id_for_label }}" class="form-check-label">
+                        I am from a single-parent household
+                    </label>
+                </div>
+                
+                <div class="form-check">
+                    {{ form.is_child_headed_household }}
+                    <label for="{{ form.is_child_headed_household.id_for_label }}" class="form-check-label">
+                        I am from a child-headed household
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Photo Section -->
+        <div id="photo" class="form-section">
+            <div class="section-header">
+                <i class="fas fa-camera"></i>
+                <h3>Profile Photo</h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.profile_photo.id_for_label }}" class="form-label">
+                    Profile Photo
+                </label>
+                {{ form.profile_photo }}
+                <div class="help-text">Upload a clear photo of yourself (JPEG, PNG, max 5MB)</div>
+                {% if form.profile_photo.errors %}
+                    <div class="error-text">{{ form.profile_photo.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            {% if student.profile_photo %}
+            <div class="current-photo">
+                <p><strong>Current Photo:</strong></p>
+                <img src="{{ student.profile_photo.url }}" alt="Current profile photo" style="max-width: 200px; height: auto; border-radius: 8px; border: 2px solid #e9ecef;">
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <a href="{% url 'scholarships:student_profile' %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" class="btn-update">
+                <i class="fas fa-save"></i> {{ submit_text }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentSection = 'personal';
+const sections = ['personal', 'contact', 'academic', 'family', 'photo'];
+
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.form-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all nav items
+    document.querySelectorAll('.form-nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(sectionName).classList.add('active');
+    
+    // Add active class to clicked nav item
+    event.target.classList.add('active');
+    
+    // Update current section
+    currentSection = sectionName;
+    
+    // Update progress bar
+    updateProgressBar();
+}
+
+function updateProgressBar() {
+    const currentIndex = sections.indexOf(currentSection);
+    const progress = ((currentIndex + 1) / sections.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+}
+
+function nextSection() {
+    const currentIndex = sections.indexOf(currentSection);
+    if (currentIndex < sections.length - 1) {
+        const nextSectionName = sections[currentIndex + 1];
+        showSection(nextSectionName);
+        
+        // Trigger click on nav item
+        document.querySelector(`[onclick="showSection('${nextSectionName}')"]`).click();
+    }
+}
+
+function previousSection() {
+    const currentIndex = sections.indexOf(currentSection);
+    if (currentIndex > 0) {
+        const prevSectionName = sections[currentIndex - 1];
+        showSection(prevSectionName);
+        
+        // Trigger click on nav item
+        document.querySelector(`[onclick="showSection('${prevSectionName}')"]`).click();
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgressBar();
+    
+    // Add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey) {
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextSection();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                previousSection();
+            }
+        }
+    });
+    
+    // Form validation feedback
+    const form = document.getElementById('updateProfileForm');
+    const inputs = form.querySelectorAll('.form-control');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    });
+    
+    // Auto-save draft (optional)
+    let saveTimer;
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(function() {
+                // Could implement auto-save functionality here
+                console.log('Auto-saving draft...');
+            }, 2000);
+        });
+    });
+});
+
+// Add some visual feedback for form interactions
+document.querySelectorAll('.form-nav-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+        if (!this.classList.contains('active')) {
+            this.style.transform = 'translateY(-2px)';
+        }
+    });
+    
+    item.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+    });
+});
+</script>
+
+<style>
+.form-control.is-valid {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.current-photo {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

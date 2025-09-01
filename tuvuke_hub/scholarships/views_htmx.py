@@ -123,12 +123,19 @@ def htmx_scholarship_search(request):
         except (ValueError, TypeError):
             pass
     
-    # Apply education level filter
+    # Apply education level filter - SQLite compatible
     if education_level:
-        scholarships = scholarships.filter(
-            Q(target_education_levels__contains=[education_level]) |
-            Q(target_education_levels__contains=['all_levels'])
-        )
+        # Get all scholarships first, then filter in Python
+        all_scholarships = list(scholarships)
+        filtered_ids = []
+        for scholarship in all_scholarships:
+            target_levels = scholarship.target_education_levels or []
+            if (not target_levels or 
+                'all_levels' in target_levels or 
+                education_level in target_levels):
+                filtered_ids.append(scholarship.id)
+        
+        scholarships = Scholarship.objects.filter(id__in=filtered_ids)
     
     # Apply scholarship type filter
     if scholarship_type:
@@ -331,10 +338,17 @@ def htmx_scholarship_stats(request):
             pass
     
     if education_level:
-        scholarships = scholarships.filter(
-            Q(target_education_levels__contains=[education_level]) |
-            Q(target_education_levels__contains=['all_levels'])
-        )
+        # Get all scholarships first, then filter in Python - SQLite compatible
+        all_scholarships = list(scholarships)
+        filtered_ids = []
+        for scholarship in all_scholarships:
+            target_levels = scholarship.target_education_levels or []
+            if (not target_levels or 
+                'all_levels' in target_levels or 
+                education_level in target_levels):
+                filtered_ids.append(scholarship.id)
+        
+        scholarships = Scholarship.objects.filter(id__in=filtered_ids)
     
     if scholarship_type:
         scholarships = scholarships.filter(scholarship_type=scholarship_type)

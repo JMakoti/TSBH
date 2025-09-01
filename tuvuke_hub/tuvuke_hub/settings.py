@@ -84,6 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "scholarships.access_control.user_roles_context",  # Custom context processor
             ],
         },
     },
@@ -161,6 +162,17 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Authentication Configuration
+AUTHENTICATION_BACKENDS = [
+    'scholarships.backends.MultiFieldAuthBackend',  # Custom backend for phone/email/username
+    'django.contrib.auth.backends.ModelBackend',    # Default Django backend
+]
+
+# Login/Logout URLs
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
 # Email Configuration
 if env('EMAIL_HOST', default=None):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -175,48 +187,3 @@ if env('EMAIL_HOST', default=None):
 # Third-party API Configuration
 AFRICASTALKING_USERNAME = env('AFRICASTALKING_USERNAME', default='')
 AFRICASTALKING_API_KEY = env('AFRICASTALKING_API_KEY', default='')
-
-# Django REST Framework Configuration
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ],
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-    ],
-}
-
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React frontend
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",  # Vue frontend
-    "http://127.0.0.1:8080",
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-# Security Settings for Production
-if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_REDIRECT_EXEMPT = []
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_PRELOAD = True

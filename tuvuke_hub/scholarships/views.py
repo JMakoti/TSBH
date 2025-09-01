@@ -26,6 +26,11 @@ from .forms import (
     StudentSearchForm
 )
 from .models import Student, County, Scholarship, Provider
+from .access_control import (
+    StudentRequiredMixin, ProviderRequiredMixin, StaffRequiredMixin,
+    student_required, provider_required, staff_required,
+    is_student, is_provider, is_staff_or_admin
+)
 
 
 @method_decorator(csrf_protect, name='dispatch')
@@ -57,8 +62,8 @@ class StudentRegistrationView(View):
                 # The form already handles password hashing in its save() method
                 user = form.save()
                 
-                # Log in the user automatically
-                login(request, user)
+                # Log in the user automatically with specified backend
+                login(request, user, backend='scholarships.backends.MultiFieldAuthBackend')
                 
                 # Add success message
                 messages.success(
@@ -118,8 +123,8 @@ def register_student(request):
                 # Save the form - this creates both User and Student profile
                 user = form.save()
                 
-                # Log in the user automatically
-                login(request, user)
+                # Log in the user automatically with specified backend
+                login(request, user, backend='scholarships.backends.MultiFieldAuthBackend')
                 
                 # Add success message
                 messages.success(
@@ -175,8 +180,8 @@ def quick_register_student(request):
                 # Create user and student profile
                 user = form.save()
                 
-                # Log in the user
-                login(request, user)
+                # Log in the user with specified backend
+                login(request, user, backend='scholarships.backends.MultiFieldAuthBackend')
                 
                 messages.success(
                     request, 
@@ -277,7 +282,7 @@ def update_student_profile(request):
                     'Your profile has been updated successfully!'
                 )
                 
-                return redirect('student_profile')
+                return redirect('scholarships:student_profile')
                 
             except Exception as e:
                 messages.error(
@@ -745,6 +750,48 @@ def validate_phone_number(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+def filter_scholarships_by_education_level(queryset, education_level):
+    """
+    Filter scholarships by education level - SQLite compatible version
+    """
+    if not education_level:
+        return queryset
+    
+    # For efficiency, use a raw SQL approach or Python filtering
+    # Get scholarship IDs that match the criteria
+    matching_ids = []
+    
+    for scholarship in queryset.select_related('provider'):
+        target_levels = scholarship.target_education_levels or []
+        if (not target_levels or 
+            'all_levels' in target_levels or 
+            education_level in target_levels):
+            matching_ids.append(scholarship.id)
+    
+    # Return filtered queryset by IDs
+    return queryset.model.objects.filter(id__in=matching_ids)
+
+
+def filter_scholarships_by_field_of_study(queryset, field_of_study):
+    """
+    Filter scholarships by field of study - SQLite compatible version
+    """
+    if not field_of_study:
+        return queryset
+    
+    # Get scholarship IDs that match the criteria
+    matching_ids = []
+    
+    for scholarship in queryset.select_related('provider'):
+        target_fields = scholarship.target_fields_of_study or []
+        if (not target_fields or 
+            any(field_of_study.lower() in field.lower() for field in target_fields)):
+            matching_ids.append(scholarship.id)
+    
+    # Return filtered queryset by IDs
+    return queryset.model.objects.filter(id__in=matching_ids)
+
+
 def normalize_phone_number(phone_number):
     """
     Normalize phone number to international format (+254XXXXXXXXX).
@@ -842,13 +889,10 @@ class ScholarshipListView(ListView):
             except (ValueError, TypeError):
                 pass
         
-        # Education level filter
+        # Education level filter (SQLite compatible)
         education_level = self.request.GET.get('education_level')
         if education_level:
-            queryset = queryset.filter(
-                Q(target_education_levels__contains=[education_level]) |
-                Q(target_education_levels__contains=['all_levels'])
-            )
+            queryset = filter_scholarships_by_education_level(queryset, education_level)
         
         # Scholarship type filter
         scholarship_type = self.request.GET.get('scholarship_type')
@@ -906,10 +950,10 @@ class ScholarshipListView(ListView):
         elif gender == 'any':
             queryset = queryset.filter(for_males_only=False, for_females_only=False)
         
-        # Field of study filter
+        # Field of study filter (SQLite compatible)
         field_of_study = self.request.GET.get('field_of_study')
         if field_of_study:
-            queryset = queryset.filter(target_fields_of_study__contains=[field_of_study])
+            queryset = filter_scholarships_by_field_of_study(queryset, field_of_study)
         
         # Renewable scholarships only
         if self.request.GET.get('renewable') == 'true':
@@ -1023,3 +1067,294 @@ class ScholarshipListView(ListView):
             context['has_student_profile'] = False
         
         return context
+
+
+# =====================================================================
+# ROLE-BASED ACCESS CONTROL VIEWS
+# =====================================================================
+
+class StudentDashboardView(StudentRequiredMixin, ListView):
+    """
+    Student dashboard view - only accessible by students
+    Shows personalized scholarship recommendations and application status
+    """
+    model = Scholarship
+    template_name = 'scholarships/dashboard.html'
+    context_object_name = 'recommended_scholarships'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        """
+        Get personalized scholarship recommendations for the student
+        """
+        student = self.request.user.student_profile
+        
+        # Get active scholarships that the student hasn't applied to yet
+        applied_scholarship_ids = student.applications.values_list('scholarship_id', flat=True)
+        
+        queryset = Scholarship.objects.filter(
+            status='active',
+            application_deadline__gte=timezone.now()
+        ).exclude(
+            id__in=applied_scholarship_ids
+        ).select_related('provider').prefetch_related('target_counties')
+        
+        # Add basic filtering based on student profile
+        if student.county:
+            queryset = queryset.filter(
+                Q(target_counties=student.county) | 
+                Q(target_counties__isnull=True)
+            )
+        
+        # Note: We'll filter by education level in Python since SQLite doesn't support JSON contains
+        # Get all scholarships first, then filter in Python
+        all_scholarships = list(queryset[:100])  # Limit to prevent performance issues
+        
+        # Filter by education level in Python
+        filtered_scholarships = []
+        for scholarship in all_scholarships:
+            # Check if scholarship targets the student's education level
+            if (not scholarship.target_education_levels or 
+                'all_levels' in scholarship.target_education_levels or
+                student.current_education_level in scholarship.target_education_levels):
+                filtered_scholarships.append(scholarship)
+        
+        # Sort by match score (calculate dynamically)
+        scholarships_with_scores = []
+        for scholarship in filtered_scholarships:
+            match_score = scholarship.calculate_match_score(student)
+            scholarships_with_scores.append((scholarship, match_score))
+        
+        # Sort by match score descending
+        scholarships_with_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return just the scholarships, sorted by match score
+        return [item[0] for item in scholarships_with_scores[:20]]
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        student = self.request.user.student_profile
+        
+        context.update({
+            'title': 'Student Dashboard',
+            'student': student,
+            'recent_applications': student.applications.order_by('-created_at')[:5],
+            'profile_completion': self.calculate_profile_completion(student),
+            'urgent_deadlines': Scholarship.objects.filter(
+                status='active',
+                application_deadline__gte=timezone.now(),
+                application_deadline__lte=timezone.now() + timezone.timedelta(days=7)
+            )[:5]
+        })
+        return context
+    
+    def calculate_profile_completion(self, student):
+        """
+        Calculate profile completion percentage
+        """
+        fields_to_check = [
+            'first_name', 'last_name', 'date_of_birth', 'national_id',
+            'phone_number', 'email', 'county', 'current_institution',
+            'course_of_study', 'family_income_annual'
+        ]
+        
+        completed_fields = 0
+        for field in fields_to_check:
+            value = getattr(student, field, None)
+            if value and str(value).strip():
+                completed_fields += 1
+        
+        return round((completed_fields / len(fields_to_check)) * 100)
+
+
+class ProviderDashboardView(ProviderRequiredMixin, ListView):
+    """
+    Provider dashboard view - only accessible by providers
+    Shows provider's scholarships and application statistics
+    """
+    model = Scholarship
+    template_name = 'providers/dashboard.html'
+    context_object_name = 'scholarships'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        """
+        Get scholarships created by this provider
+        """
+        # For now, filter by email since Provider model links via email
+        try:
+            provider = Provider.objects.get(email=self.request.user.email)
+            return provider.scholarships.order_by('-created_at')
+        except Provider.DoesNotExist:
+            return Scholarship.objects.none()
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            provider = Provider.objects.get(email=self.request.user.email)
+            
+            context.update({
+                'title': 'Provider Dashboard',
+                'provider': provider,
+                'total_scholarships': provider.scholarships.count(),
+                'active_scholarships': provider.scholarships.filter(status='active').count(),
+                'total_applications': sum(s.application_count for s in provider.scholarships.all()),
+                'recent_applications': [],  # Would need to implement application tracking
+            })
+        except Provider.DoesNotExist:
+            context.update({
+                'title': 'Provider Dashboard',
+                'provider': None,
+                'error_message': 'Provider profile not found. Please contact support.'
+            })
+        
+        return context
+
+
+class AdminDashboardView(StaffRequiredMixin, ListView):
+    """
+    Admin dashboard view - only accessible by staff
+    Shows system statistics and management options
+    """
+    model = Student
+    template_name = 'admin/dashboard.html'
+    context_object_name = 'recent_students'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        """
+        Get recent student registrations
+        """
+        return Student.objects.order_by('-created_at')[:10]
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        context.update({
+            'title': 'Admin Dashboard',
+            'total_students': Student.objects.count(),
+            'verified_students': Student.objects.filter(is_verified=True).count(),
+            'total_providers': Provider.objects.count(),
+            'active_providers': Provider.objects.filter(is_active=True, is_verified=True).count(),
+            'total_scholarships': Scholarship.objects.count(),
+            'active_scholarships': Scholarship.objects.filter(status='active').count(),
+            'recent_scholarships': Scholarship.objects.order_by('-created_at')[:5],
+        })
+        
+        return context
+
+
+# Function-based views with role decorators
+
+@student_required
+def student_profile_view(request):
+    """
+    Student profile view - only accessible by students
+    """
+    student = request.user.student_profile
+    
+    context = {
+        'title': 'My Profile',
+        'student': student,
+        'counties': County.objects.all(),
+    }
+    
+    return render(request, 'students/profile.html', context)
+
+
+@provider_required
+def create_scholarship_view(request):
+    """
+    Create scholarship view - only accessible by providers
+    """
+    context = {
+        'title': 'Create New Scholarship',
+    }
+    
+    return render(request, 'providers/create_scholarship.html', context)
+
+
+@staff_required
+def admin_moderation_view(request):
+    """
+    Admin moderation view - only accessible by staff
+    """
+    context = {
+        'title': 'Moderation Panel',
+        'pending_students': Student.objects.filter(is_verified=False)[:10],
+        'pending_providers': Provider.objects.filter(is_verified=False)[:10],
+    }
+    
+    return render(request, 'admin/moderation.html', context)
+
+
+# AJAX endpoints with role-based access
+
+@student_required
+def student_ajax_data(request):
+    """
+    AJAX endpoint for student-specific data
+    """
+    student = request.user.student_profile
+    
+    data = {
+        'profile_completion': calculate_profile_completion_percentage(student),
+        'application_count': student.applications.count(),
+        'unread_notifications': 0,  # Would implement notification system
+    }
+    
+    return JsonResponse(data)
+
+
+@provider_required  
+def provider_ajax_data(request):
+    """
+    AJAX endpoint for provider-specific data
+    """
+    try:
+        provider = Provider.objects.get(email=request.user.email)
+        data = {
+            'scholarship_count': provider.scholarships.count(),
+            'total_applications': sum(s.application_count for s in provider.scholarships.all()),
+            'active_scholarships': provider.scholarships.filter(status='active').count(),
+        }
+    except Provider.DoesNotExist:
+        data = {'error': 'Provider profile not found'}
+    
+    return JsonResponse(data)
+
+
+@staff_required
+def admin_ajax_stats(request):
+    """
+    AJAX endpoint for admin statistics
+    """
+    data = {
+        'total_users': Student.objects.count() + Provider.objects.count(),
+        'new_registrations_today': Student.objects.filter(
+            created_at__date=timezone.now().date()
+        ).count(),
+        'active_scholarships': Scholarship.objects.filter(status='active').count(),
+    }
+    
+    return JsonResponse(data)
+
+
+def calculate_profile_completion_percentage(student):
+    """
+    Helper function to calculate profile completion percentage
+    """
+    required_fields = [
+        'first_name', 'last_name', 'date_of_birth', 'national_id',
+        'phone_number', 'email', 'county', 'current_institution',
+        'course_of_study', 'family_income_annual'
+    ]
+    
+    completed_fields = 0
+    for field in required_fields:
+        value = getattr(student, field, None)
+        if value and str(value).strip():
+            completed_fields += 1
+    
+    return round((completed_fields / len(required_fields)) * 100)

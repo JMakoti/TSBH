@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login - TUVUKE Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .login-header h1 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-header p {
+        color: #7f8c8d;
+        margin: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-control {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 12px 15px;
+        font-size: 16px;
+    }
+    
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        background: linear-gradient(135deg, #2980b9, #1f618d);
+        transform: translateY(-1px);
+    }
+    
+    .login-links {
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+    
+    .login-links a {
+        color: #3498db;
+        text-decoration: none;
+        margin: 0 10px;
+    }
+    
+    .login-links a:hover {
+        text-decoration: underline;
+    }
+    
+    .alert {
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .form-check {
+        margin: 1rem 0;
+    }
+    
+    .auth-method-info {
+        background: #f8f9fa;
+        border-left: 4px solid #3498db;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .auth-method-info h6 {
+        margin: 0 0 0.5rem 0;
+        color: #2c3e50;
+    }
+    
+    .auth-method-info p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="login-container">
+        <div class="login-header">
+            <h1>{{ title }}</h1>
+            <p>{{ subtitle }}</p>
+        </div>
+        
+        <!-- Authentication Method Information -->
+        <div class="auth-method-info">
+            <h6><i class="fas fa-info-circle"></i> Login Methods</h6>
+            <p>You can login using your phone number (+254XXXXXXXXX), email address, or username.</p>
+        </div>
+        
+        <!-- Display Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Login Form -->
+        <form method="post" id="loginForm">
+            {% csrf_token %}
+            
+            <!-- Username/Phone/Email Field -->
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}" class="form-label">
+                    {{ form.username.label }}
+                </label>
+                {{ form.username }}
+                {% if form.username.help_text %}
+                    <div class="help-text">{{ form.username.help_text }}</div>
+                {% endif %}
+                {% if form.username.errors %}
+                    <div class="text-danger">
+                        {% for error in form.username.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}" class="form-label">
+                    {{ form.password.label }}
+                </label>
+                {{ form.password }}
+                {% if form.password.help_text %}
+                    <div class="help-text">{{ form.password.help_text }}</div>
+                {% endif %}
+                {% if form.password.errors %}
+                    <div class="text-danger">
+                        {% for error in form.password.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Remember Me -->
+            {% if form.remember_me %}
+            <div class="form-check">
+                {{ form.remember_me }}
+                <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">
+                    {{ form.remember_me.label }}
+                </label>
+            </div>
+            {% endif %}
+            
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-login">
+                <i class="fas fa-sign-in-alt"></i> Login to TUVUKE Hub
+            </button>
+        </form>
+        
+        <!-- Login Links -->
+        <div class="login-links">
+            <a href="{% url 'scholarships:register' %}">
+                <i class="fas fa-user-plus"></i> Create Account
+            </a>
+            <a href="{% url 'scholarships:password_reset' %}">
+                <i class="fas fa-key"></i> Forgot Password?
+            </a>
+        </div>
+        
+        <!-- Additional Information -->
+        <div class="mt-4 text-center">
+            <small class="text-muted">
+                Need help? <a href="#" class="text-decoration-none">Contact Support</a>
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('id_username');
+    
+    // Phone number formatting helper
+    usernameInput.addEventListener('input', function() {
+        let value = this.value.trim();
+        
+        // If it looks like a phone number, provide visual feedback
+        if (/^[\d+]/.test(value) && value.length >= 9) {
+            // Add visual feedback that this looks like a phone number
+            this.classList.add('phone-input');
+        } else {
+            this.classList.remove('phone-input');
+        }
+    });
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const username = usernameInput.value.trim();
+        const password = document.getElementById('id_password').value;
+        
+        if (!username || !password) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.phone-input {
+    border-left: 3px solid #28a745 !important;
+}
+</style>
+{% endblock %}

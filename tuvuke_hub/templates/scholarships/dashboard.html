@@ -582,7 +582,7 @@
                         <i class="fas fa-user-edit mb-3" style="font-size: 3rem; color: #dee2e6;"></i>
                         <h6>Complete Your Profile</h6>
                         <p class="text-muted mb-3">Fill out your profile to get personalized scholarship recommendations.</p>
-                        <a href="{% url 'scholarships:student_onboarding' %}" class="btn btn-action">
+                        <a href="{% url 'scholarships:student_profile_complete' %}" class="btn btn-action">
                             <i class="fas fa-plus me-1"></i>
                             Complete Profile
                         </a>
@@ -601,11 +601,11 @@
                 </div>
                 <div class="section-body">
                     <div class="quick-actions">
-                        <a href="{% url 'scholarships:scholarship_search' %}" class="quick-action-btn">
+                        <a href="{% url 'scholarships:search_homepage' %}" class="quick-action-btn">
                             <i class="fas fa-search"></i>
                             Find Scholarships
                         </a>
-                        <a href="{% url 'scholarships:student_registration' %}" class="quick-action-btn">
+                        <a href="{% url 'scholarships:student_profile' %}" class="quick-action-btn">
                             <i class="fas fa-edit"></i>
                             Update Profile
                         </a>
@@ -623,7 +623,7 @@
                         <i class="fas fa-file-text"></i>
                         My Applications
                     </h5>
-                    <a href="{% url 'scholarships:scholarship_search' %}" class="btn btn-outline-primary btn-sm">
+                    <a href="{% url 'scholarships:search_homepage' %}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-plus me-1"></i>
                         Apply for More
                     </a>
@@ -667,7 +667,7 @@
                             <i class="fas fa-file-text"></i>
                             <h6>No Applications Yet</h6>
                             <p>You haven't applied to any scholarships yet. Start exploring opportunities below!</p>
-                            <a href="{% url 'scholarships:scholarship_search' %}" class="btn btn-action">
+                            <a href="{% url 'scholarships:search_homepage' %}" class="btn btn-action">
                                 <i class="fas fa-search me-1"></i>
                                 Find Scholarships
                             </a>
@@ -683,7 +683,7 @@
                         <i class="fas fa-star"></i>
                         Recommended for You
                     </h5>
-                    <a href="{% url 'scholarships:scholarship_search' %}" class="btn btn-outline-primary btn-sm">
+                    <a href="{% url 'scholarships:search_homepage' %}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-eye me-1"></i>
                         View All
                     </a>
@@ -741,13 +741,13 @@
                             <h6>No Recommendations Available</h6>
                             {% if not student %}
                             <p>Complete your profile to get personalized scholarship recommendations.</p>
-                            <a href="{% url 'scholarships:student_onboarding' %}" class="btn btn-action">
+                            <a href="{% url 'scholarships:student_profile_complete' %}" class="btn btn-action">
                                 <i class="fas fa-user-plus me-1"></i>
                                 Complete Profile
                             </a>
                             {% else %}
                             <p>We're working on finding scholarships that match your profile. Check back soon!</p>
-                            <a href="{% url 'scholarships:scholarship_search' %}" class="btn btn-action">
+                            <a href="{% url 'scholarships:search_homepage' %}" class="btn btn-action">
                                 <i class="fas fa-search me-1"></i>
                                 Browse All Scholarships
                             </a>

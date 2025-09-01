@@ -94,12 +94,19 @@ class ScholarshipFilter(django_filters.FilterSet):
         fields = []  # We define filters explicitly above
     
     def filter_education_level(self, queryset, name, value):
-        """Filter scholarships by education level"""
+        """Filter scholarships by education level - SQLite compatible"""
         if value:
-            return queryset.filter(
-                Q(target_education_levels__contains=[value]) |
-                Q(target_education_levels__contains=['all_levels'])
-            )
+            # Get all scholarships first, then filter in Python
+            all_scholarships = list(queryset)
+            filtered_ids = []
+            for scholarship in all_scholarships:
+                target_levels = scholarship.target_education_levels or []
+                if (not target_levels or 
+                    'all_levels' in target_levels or 
+                    value in target_levels):
+                    filtered_ids.append(scholarship.id)
+            
+            return Scholarship.objects.filter(id__in=filtered_ids)
         return queryset
     
     def filter_gender(self, queryset, name, value):
@@ -117,14 +124,33 @@ class ScholarshipFilter(django_filters.FilterSet):
         return queryset
     
     def filter_search(self, queryset, name, value):
-        """Search in multiple fields"""
+        """Search in multiple fields - SQLite compatible"""
         if value:
-            return queryset.filter(
+            # For basic text fields, use standard icontains
+            text_filtered = queryset.filter(
                 Q(title__icontains=value) |
                 Q(description__icontains=value) |
-                Q(tags__contains=[value]) |
                 Q(provider__name__icontains=value)
             )
+            
+            # For tags (JSON field), filter in Python
+            all_scholarships = list(text_filtered)
+            tag_matched_ids = []
+            for scholarship in all_scholarships:
+                tags = scholarship.tags or []
+                if any(value.lower() in tag.lower() for tag in tags):
+                    tag_matched_ids.append(scholarship.id)
+            
+            # Combine results
+            if tag_matched_ids:
+                return queryset.filter(
+                    Q(title__icontains=value) |
+                    Q(description__icontains=value) |
+                    Q(provider__name__icontains=value) |
+                    Q(id__in=tag_matched_ids)
+                )
+            else:
+                return text_filtered
         return queryset
     
     @property

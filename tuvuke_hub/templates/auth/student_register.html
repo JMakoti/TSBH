@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register - TUVUKE Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 30px auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .register-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .register-header h1 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .register-header p {
+        color: #7f8c8d;
+        margin: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-control {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 12px 15px;
+        font-size: 16px;
+    }
+    
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn-register {
+        background: linear-gradient(135deg, #27ae60, #219a52);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-register:hover {
+        background: linear-gradient(135deg, #219a52, #1d8c47);
+        transform: translateY(-1px);
+    }
+    
+    .register-links {
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+    
+    .register-links a {
+        color: #3498db;
+        text-decoration: none;
+        margin: 0 10px;
+    }
+    
+    .register-links a:hover {
+        text-decoration: underline;
+    }
+    
+    .alert {
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .phone-info {
+        background: #f8f9fa;
+        border-left: 4px solid #28a745;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .phone-info h6 {
+        margin: 0 0 0.5rem 0;
+        color: #2c3e50;
+    }
+    
+    .phone-info p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="register-container">
+        <div class="register-header">
+            <h1>Create Your Account</h1>
+            <p>Join TUVUKE Hub to find scholarships</p>
+        </div>
+        
+        <!-- Phone Number Information -->
+        <div class="phone-info">
+            <h6><i class="fas fa-phone"></i> Phone Number Login</h6>
+            <p>Your phone number will be used for login. Please use format: +254XXXXXXXXX</p>
+        </div>
+        
+        <!-- Display Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Registration Form -->
+        <form method="post" id="registerForm">
+            {% csrf_token %}
+            
+            <!-- First Name -->
+            <div class="form-group">
+                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                    {{ form.first_name.label }}
+                </label>
+                {{ form.first_name }}
+                {% if form.first_name.help_text %}
+                    <div class="help-text">{{ form.first_name.help_text }}</div>
+                {% endif %}
+                {% if form.first_name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.first_name.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Last Name -->
+            <div class="form-group">
+                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                    {{ form.last_name.label }}
+                </label>
+                {{ form.last_name }}
+                {% if form.last_name.help_text %}
+                    <div class="help-text">{{ form.last_name.help_text }}</div>
+                {% endif %}
+                {% if form.last_name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.last_name.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Phone Number -->
+            <div class="form-group">
+                <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                    {{ form.phone_number.label }}
+                </label>
+                {{ form.phone_number }}
+                {% if form.phone_number.help_text %}
+                    <div class="help-text">{{ form.phone_number.help_text }}</div>
+                {% endif %}
+                {% if form.phone_number.errors %}
+                    <div class="text-danger">
+                        {% for error in form.phone_number.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Email -->
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}" class="form-label">
+                    {{ form.email.label }}
+                </label>
+                {{ form.email }}
+                {% if form.email.help_text %}
+                    <div class="help-text">{{ form.email.help_text }}</div>
+                {% endif %}
+                {% if form.email.errors %}
+                    <div class="text-danger">
+                        {% for error in form.email.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Password -->
+            <div class="form-group">
+                <label for="{{ form.password1.id_for_label }}" class="form-label">
+                    {{ form.password1.label }}
+                </label>
+                {{ form.password1 }}
+                {% if form.password1.help_text %}
+                    <div class="help-text">{{ form.password1.help_text }}</div>
+                {% endif %}
+                {% if form.password1.errors %}
+                    <div class="text-danger">
+                        {% for error in form.password1.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Password Confirmation -->
+            <div class="form-group">
+                <label for="{{ form.password2.id_for_label }}" class="form-label">
+                    {{ form.password2.label }}
+                </label>
+                {{ form.password2 }}
+                {% if form.password2.help_text %}
+                    <div class="help-text">{{ form.password2.help_text }}</div>
+                {% endif %}
+                {% if form.password2.errors %}
+                    <div class="text-danger">
+                        {% for error in form.password2.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-register">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+        </form>
+        
+        <!-- Register Links -->
+        <div class="register-links">
+            <a href="{% url 'scholarships:login' %}">
+                <i class="fas fa-sign-in-alt"></i> Already have an account? Login
+            </a>
+        </div>
+        
+        <!-- Additional Information -->
+        <div class="mt-4 text-center">
+            <small class="text-muted">
+                By creating an account, you agree to our Terms of Service and Privacy Policy.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const phoneInput = document.getElementById('id_phone_number');
+    
+    // Phone number formatting
+    phoneInput.addEventListener('input', function() {
+        let value = this.value.trim();
+        
+        // Auto-format Kenyan phone numbers
+        if (value.length === 10 && value.startsWith('0')) {
+            this.value = '+254' + value.substring(1);
+        }
+        
+        // Visual feedback
+        if (value.match(/^\+254[17]\d{8}$/)) {
+            this.classList.add('valid-phone');
+            this.classList.remove('invalid-phone');
+        } else {
+            this.classList.remove('valid-phone');
+            if (value.length > 5) {
+                this.classList.add('invalid-phone');
+            } else {
+                this.classList.remove('invalid-phone');
+            }
+        }
+    });
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const phone = phoneInput.value.trim();
+        const password1 = document.getElementById('id_password1').value;
+        const password2 = document.getElementById('id_password2').value;
+        
+        if (!phone.match(/^\+254[17]\d{8}$/)) {
+            e.preventDefault();
+            alert('Please enter a valid Kenyan phone number (e.g., +254712345678)');
+            return false;
+        }
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('Passwords do not match');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.valid-phone {
+    border-left: 3px solid #28a745 !important;
+}
+
+.invalid-phone {
+    border-left: 3px solid #dc3545 !important;
+}
+</style>
+{% endblock %}

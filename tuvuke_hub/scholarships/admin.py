@@ -201,7 +201,7 @@ class ProviderAdmin(admin.ModelAdmin):
         'is_verified', 'is_active'
     ]
     search_fields = ['name', 'email', 'description']
-    readonly_fields = ['slug', 'created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at']
     prepopulated_fields = {'slug': ('name',)}
     actions = ['mark_as_verified']
     

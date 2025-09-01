@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - TUVUKE Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px 10px 0 0;
+        text-align: center;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 3rem;
+    }
+    
+    .profile-name {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .profile-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .profile-content {
+        background: white;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .profile-nav {
+        display: flex;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+    
+    .profile-nav-item {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .profile-nav-item.active {
+        color: #3498db;
+        background: white;
+        border-bottom: 2px solid #3498db;
+    }
+    
+    .profile-nav-item:hover {
+        color: #3498db;
+        background: white;
+    }
+    
+    .profile-section {
+        padding: 2rem;
+        display: none;
+    }
+    
+    .profile-section.active {
+        display: block;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #3498db;
+    }
+    
+    .info-card h4 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .info-value {
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .btn-edit {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 5px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-edit:hover {
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+        transform: translateY(-1px);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .completion-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .completion-high {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .completion-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .completion-low {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .empty-state {
+        text-align: center;
+        color: #6c757d;
+        padding: 2rem;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-container {
+            margin: 1rem auto;
+            padding: 0 0.5rem;
+        }
+        
+        .profile-header {
+            padding: 1.5rem;
+        }
+        
+        .profile-nav {
+            flex-direction: column;
+        }
+        
+        .profile-nav-item {
+            text-align: left;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if student.profile_photo %}
+                <img src="{{ student.profile_photo.url }}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            {% else %}
+                <i class="fas fa-user"></i>
+            {% endif %}
+        </div>
+        <div class="profile-name">{{ student.full_name }}</div>
+        <div class="profile-subtitle">Student Profile</div>
+        {% if student.phone_number %}
+            <div class="profile-subtitle">{{ student.phone_number }}</div>
+        {% endif %}
+    </div>
+    
+    <!-- Profile Content -->
+    <div class="profile-content">
+        <!-- Navigation Tabs -->
+        <div class="profile-nav">
+            <button class="profile-nav-item active" onclick="showSection('personal')">
+                <i class="fas fa-user"></i> Personal Information
+            </button>
+            <button class="profile-nav-item" onclick="showSection('academic')">
+                <i class="fas fa-graduation-cap"></i> Academic Details
+            </button>
+            <button class="profile-nav-item" onclick="showSection('financial')">
+                <i class="fas fa-money-bill"></i> Financial Information
+            </button>
+            <button class="profile-nav-item" onclick="showSection('documents')">
+                <i class="fas fa-file-alt"></i> Documents
+            </button>
+        </div>
+        
+        <!-- Personal Information Section -->
+        <div id="personal" class="profile-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-user text-primary"></i> Personal Information</h3>
+                <a href="{% url 'scholarships:update_student_profile' %}" class="btn-edit">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4><i class="fas fa-id-card"></i> Basic Details</h4>
+                    <div class="info-item">
+                        <span class="info-label">Full Name</span>
+                        <span class="info-value">{{ student.full_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date of Birth</span>
+                        <span class="info-value">
+                            {% if student.date_of_birth %}
+                                {{ student.date_of_birth|date:"F d, Y" }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Gender</span>
+                        <span class="info-value">
+                            {% if student.gender %}
+                                {{ student.get_gender_display }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">National ID</span>
+                        <span class="info-value">
+                            {% if student.national_id %}
+                                {{ student.national_id }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h4><i class="fas fa-address-card"></i> Contact Information</h4>
+                    <div class="info-item">
+                        <span class="info-label">Phone Number</span>
+                        <span class="info-value">{{ student.phone_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">
+                            {% if student.email %}
+                                {{ student.email }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">County</span>
+                        <span class="info-value">
+                            {% if student.county %}
+                                {{ student.county.get_name_display }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Sub County</span>
+                        <span class="info-value">
+                            {% if student.sub_county %}
+                                {{ student.sub_county }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Academic Details Section -->
+        <div id="academic" class="profile-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-graduation-cap text-success"></i> Academic Details</h3>
+                <a href="{% url 'scholarships:update_student_profile' %}" class="btn-edit">
+                    <i class="fas fa-edit"></i> Edit Academic Info
+                </a>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4><i class="fas fa-school"></i> Current Education</h4>
+                    <div class="info-item">
+                        <span class="info-label">Education Level</span>
+                        <span class="info-value">
+                            {% if student.education_level %}
+                                {{ student.get_education_level_display }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Institution</span>
+                        <span class="info-value">
+                            {% if student.institution_name %}
+                                {{ student.institution_name }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Course/Program</span>
+                        <span class="info-value">
+                            {% if student.course_of_study %}
+                                {{ student.course_of_study }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Year of Study</span>
+                        <span class="info-value">
+                            {% if student.year_of_study %}
+                                Year {{ student.year_of_study }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h4><i class="fas fa-chart-line"></i> Academic Performance</h4>
+                    <div class="info-item">
+                        <span class="info-label">Current GPA</span>
+                        <span class="info-value">
+                            {% if student.current_gpa %}
+                                {{ student.current_gpa }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">KCSE Grade</span>
+                        <span class="info-value">
+                            {% if student.kcse_grade %}
+                                {{ student.kcse_grade }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">KCSE Index</span>
+                        <span class="info-value">
+                            {% if student.kcse_index_number %}
+                                {{ student.kcse_index_number }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Financial Information Section -->
+        <div id="financial" class="profile-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-money-bill text-warning"></i> Financial Information</h3>
+                <a href="{% url 'scholarships:update_student_profile' %}" class="btn-edit">
+                    <i class="fas fa-edit"></i> Edit Financial Info
+                </a>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4><i class="fas fa-home"></i> Family Information</h4>
+                    <div class="info-item">
+                        <span class="info-label">Family Income</span>
+                        <span class="info-value">
+                            {% if student.family_income %}
+                                KES {{ student.family_income|floatformat:0 }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Orphan Status</span>
+                        <span class="info-value">
+                            {% if student.is_orphan %}
+                                <span class="text-warning"><i class="fas fa-check"></i> Yes</span>
+                            {% else %}
+                                <span class="text-success"><i class="fas fa-times"></i> No</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Special Needs</span>
+                        <span class="info-value">
+                            {% if student.has_disability %}
+                                <span class="text-info"><i class="fas fa-check"></i> Yes</span>
+                            {% else %}
+                                <span class="text-success"><i class="fas fa-times"></i> No</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h4><i class="fas fa-user-friends"></i> Guardian Information</h4>
+                    <div class="info-item">
+                        <span class="info-label">Guardian Name</span>
+                        <span class="info-value">
+                            {% if student.guardian_name %}
+                                {{ student.guardian_name }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Guardian Phone</span>
+                        <span class="info-value">
+                            {% if student.guardian_phone %}
+                                {{ student.guardian_phone }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Documents Section -->
+        <div id="documents" class="profile-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-file-alt text-info"></i> Documents</h3>
+                <a href="{% url 'scholarships:update_student_profile' %}" class="btn-edit">
+                    <i class="fas fa-upload"></i> Upload Documents
+                </a>
+            </div>
+            
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h4>Document Management</h4>
+                <p>Document upload and management features will be available soon.</p>
+                <p class="text-muted">You'll be able to upload academic transcripts, certificates, and other required documents here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.profile-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all nav items
+    document.querySelectorAll('.profile-nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(sectionName).classList.add('active');
+    
+    // Add active class to clicked nav item
+    event.target.classList.add('active');
+}
+
+// Add smooth transitions
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for better UX
+    document.querySelectorAll('.info-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}
