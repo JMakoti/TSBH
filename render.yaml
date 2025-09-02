@@ -1,10 +1,4 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: tuvuke-hub-db
-    env: postgresql
-    plan: free
-
   # Web Service
   - type: web
     name: tuvuke-hub
