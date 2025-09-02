@@ -1,0 +1,33 @@
+services:
+  # Web Service
+  - type: web
+    name: tuvuke-hub
+    env: python
+    region: oregon  # Choose region closest to your users
+    plan: free      # Change to paid plan for production
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn tuvuke_hub.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: tuvuke_hub.settings_prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: # Set this manually in Render dashboard
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: tuvuke-hub.onrender.com,.onrender.com
+
+# Note: Database section commented out due to free tier limit
+# You'll need to either:
+# 1. Use an existing database, or
+# 2. Upgrade to a paid plan, or  
+# 3. Delete existing free database first
+# 
+# databases:
+#   - name: tuvuke-hub-db
+#     plan: free
