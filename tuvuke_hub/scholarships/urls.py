@@ -67,4 +67,7 @@ urlpatterns = [
     path('ajax/sub-counties/', views.get_sub_counties, name='get_sub_counties'),
     path('ajax/validate-national-id/', views.validate_national_id, name='validate_national_id'),
     path('ajax/validate-phone/', views.validate_phone_number, name='validate_phone_number'),
+    
+    # Health check endpoint
+    path('health/', views.health_check, name='health_check'),
 ]

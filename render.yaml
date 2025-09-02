@@ -1,0 +1,33 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: tuvuke-hub-db
+    env: postgresql
+    plan: free
+    ipAllowList: []
+
+  # Web Service
+  - type: web
+    name: tuvuke-hub
+    env: python
+    region: oregon  # Choose region closest to your users
+    plan: free      # Change to paid plan for production
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn tuvuke_hub.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: DJANGO_SETTINGS_MODULE
+        value: tuvuke_hub.settings_prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: tuvuke-hub-db
+          property: connectionString
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: tuvuke-hub.onrender.com,.onrender.com

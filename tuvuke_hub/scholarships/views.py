@@ -10,6 +10,9 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View, ListView, DetailView
@@ -1479,3 +1482,28 @@ def scholarship_apply_view(request, slug):
     }
     
     return render(request, 'scholarships/scholarship_apply.html', context)
+
+
+@require_GET
+@csrf_exempt
+def health_check(request):
+    """
+    Health check endpoint for Render deployment monitoring
+    """
+    try:
+        # Basic health checks
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("SELECT 1")
+        
+        return JsonResponse({
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": timezone.now().isoformat()
+        })
+    except Exception as e:
+        return JsonResponse({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": timezone.now().isoformat()
+        }, status=500)
