@@ -5,8 +5,8 @@ services:
     env: python
     region: oregon  # Choose region closest to your users
     plan: free      # Change to paid plan for production
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: gunicorn tuvuke_hub.wsgi:application --bind 0.0.0.0:$PORT
+    buildCommand: cd tuvuke_hub && chmod +x build.sh && ./build.sh
+    startCommand: cd tuvuke_hub && gunicorn tuvuke_hub.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /health/
     envVars:
       - key: PYTHON_VERSION
