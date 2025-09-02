@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Apply for {{ scholarship.title }} - Tuvuke Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+.application-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+}
+
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.character-count {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-align: right;
+}
+
+.scholarship-summary {
+    background: #e9ecef;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Application Header -->
+<div class="application-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-6 mb-2">Apply for Scholarship</h1>
+                <p class="lead mb-0">{{ scholarship.title }}</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="text-light">
+                    <i class="fas fa-clock me-2"></i>
+                    Deadline: {{ scholarship.application_deadline|date:"M d, Y" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Scholarship Summary -->
+            <div class="scholarship-summary">
+                <h5 class="mb-3">Scholarship Summary</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Provider:</strong> {{ scholarship.provider.name }}<br>
+                        <strong>Amount:</strong> KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}<br>
+                        <strong>Type:</strong> {{ scholarship.get_scholarship_type_display }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Awards Available:</strong> {{ scholarship.number_of_awards }}<br>
+                        <strong>Renewable:</strong> {% if scholarship.renewable %}Yes{% else %}No{% endif %}<br>
+                        <strong>Coverage:</strong> {{ scholarship.get_coverage_type_display }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <form method="post" id="applicationForm">
+                {% csrf_token %}
+                
+                <!-- Personal Statement -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-user me-2"></i>
+                        Personal Statement
+                    </h5>
+                    <div class="mb-3">
+                        <label for="personal_statement" class="form-label required-field">
+                            Tell us about yourself, your background, and why you deserve this scholarship
+                        </label>
+                        <textarea class="form-control" 
+                                  id="personal_statement" 
+                                  name="personal_statement" 
+                                  rows="6" 
+                                  maxlength="2000"
+                                  placeholder="Share your story, achievements, challenges overcome, and what makes you unique..."
+                                  required></textarea>
+                        <div class="character-count" id="personal_statement_count">0/2000 characters</div>
+                        <div class="form-text">
+                            This is your chance to make a personal connection. Be authentic and specific about your experiences.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motivation Letter -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-heart me-2"></i>
+                        Motivation Letter
+                    </h5>
+                    <div class="mb-3">
+                        <label for="motivation_letter" class="form-label required-field">
+                            Why are you applying for this specific scholarship? What motivates you?
+                        </label>
+                        <textarea class="form-control" 
+                                  id="motivation_letter" 
+                                  name="motivation_letter" 
+                                  rows="5" 
+                                  maxlength="1500"
+                                  placeholder="Explain your passion for your field of study, your commitment to excellence, and why this scholarship is important to you..."
+                                  required></textarea>
+                        <div class="character-count" id="motivation_letter_count">0/1500 characters</div>
+                        <div class="form-text">
+                            Focus on your passion, dedication, and how this scholarship aligns with your goals.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Career Goals -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-rocket me-2"></i>
+                        Career Goals & Future Plans
+                    </h5>
+                    <div class="mb-3">
+                        <label for="career_goals" class="form-label required-field">
+                            What are your career aspirations and how will this scholarship help you achieve them?
+                        </label>
+                        <textarea class="form-control" 
+                                  id="career_goals" 
+                                  name="career_goals" 
+                                  rows="5" 
+                                  maxlength="1500"
+                                  placeholder="Describe your career objectives, how your education fits into your plans, and the impact you hope to make..."
+                                  required></textarea>
+                        <div class="character-count" id="career_goals_count">0/1500 characters</div>
+                        <div class="form-text">
+                            Be specific about your goals and show how this scholarship is an investment in your future.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Special Circumstances -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Special Circumstances (Optional)
+                    </h5>
+                    <div class="mb-3">
+                        <label for="special_circumstances" class="form-label">
+                            Any special circumstances, challenges, or additional information you'd like to share
+                        </label>
+                        <textarea class="form-control" 
+                                  id="special_circumstances" 
+                                  name="special_circumstances" 
+                                  rows="4" 
+                                  maxlength="1000"
+                                  placeholder="Share any unique circumstances, financial hardships, family responsibilities, or other relevant information..."></textarea>
+                        <div class="character-count" id="special_circumstances_count">0/1000 characters</div>
+                        <div class="form-text">
+                            This section is optional but can provide important context for your application.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirmation -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Confirmation & Agreement
+                    </h5>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_eligibility" required>
+                        <label class="form-check-label" for="confirm_eligibility">
+                            I confirm that I meet all the eligibility criteria for this scholarship and that all information provided is accurate and truthful.
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_documents" required>
+                        <label class="form-check-label" for="confirm_documents">
+                            I understand that I may be required to provide supporting documents and references if selected for further review.
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_terms" required>
+                        <label class="form-check-label" for="confirm_terms">
+                            I agree to the terms and conditions of this scholarship program and understand that providing false information may result in disqualification.
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Submit Application
+                    </button>
+                    <div class="mt-3">
+                        <a href="{% url 'scholarships:scholarship_detail' scholarship.slug %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            Back to Scholarship Details
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Application Tips -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Application Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Be authentic and genuine in your responses
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Provide specific examples and achievements
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Proofread your application before submitting
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Address all parts of each question
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Show your passion and commitment
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Required Documents Reminder -->
+            {% if scholarship.required_documents %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Required Documents
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-2">
+                        Have these documents ready for potential follow-up:
+                    </p>
+                    <ul class="small">
+                        {% for document in scholarship.required_documents %}
+                        <li>{{ document }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Contact Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Need Help?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if scholarship.contact_email %}
+                    <p class="small">
+                        <strong>Contact:</strong><br>
+                        {{ scholarship.contact_person|default:"Scholarship Team" }}<br>
+                        <a href="mailto:{{ scholarship.contact_email }}">{{ scholarship.contact_email }}</a>
+                        {% if scholarship.contact_phone %}<br>{{ scholarship.contact_phone }}{% endif %}
+                    </p>
+                    {% endif %}
+                    <p class="small text-muted">
+                        If you have questions about this scholarship or need technical assistance with your application.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counters
+    const textareas = ['personal_statement', 'motivation_letter', 'career_goals', 'special_circumstances'];
+    
+    textareas.forEach(function(id) {
+        const textarea = document.getElementById(id);
+        const counter = document.getElementById(id + '_count');
+        
+        if (textarea && counter) {
+            const maxLength = textarea.getAttribute('maxlength');
+            
+            textarea.addEventListener('input', function() {
+                const currentLength = this.value.length;
+                counter.textContent = currentLength + '/' + maxLength + ' characters';
+                
+                // Color coding
+                if (currentLength > maxLength * 0.9) {
+                    counter.style.color = '#dc3545';
+                } else if (currentLength > maxLength * 0.7) {
+                    counter.style.color = '#ffc107';
+                } else {
+                    counter.style.color = '#6c757d';
+                }
+            });
+        }
+    });
+
+    // Form submission confirmation
+    const form = document.getElementById('applicationForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function(e) {
+        // Basic validation
+        const required = form.querySelectorAll('[required]');
+        let allValid = true;
+
+        required.forEach(function(field) {
+            if (!field.value.trim()) {
+                allValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+
+        if (!allValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        // Confirmation dialog
+        if (!confirm('Are you sure you want to submit your application? You cannot edit it after submission.')) {
+            e.preventDefault();
+            return;
+        }
+
+        // Disable submit button to prevent double submission
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+    });
+});
+</script>
+{% endblock %}

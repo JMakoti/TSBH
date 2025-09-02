@@ -364,10 +364,11 @@
                 Close
             </button>
             {% if user.is_authenticated %}
-            <button type="button" class="btn btn-success">
+            <a href="{% url 'scholarships:scholarship_detail' scholarship.slug %}" 
+               class="btn btn-success">
                 <i class="fas fa-paper-plane me-1"></i>
                 Apply Now
-            </button>
+            </a>
             {% else %}
             <a href="{% url 'scholarships:student_onboarding' %}" class="btn btn-primary">
                 <i class="fas fa-user-plus me-1"></i>

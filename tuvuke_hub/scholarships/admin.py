@@ -264,7 +264,7 @@ class ScholarshipAdmin(admin.ModelAdmin):
     list_filter = ['provider__is_verified', 'target_counties']
     search_fields = ['title']
     readonly_fields = [
-        'slug', 'view_count', 'application_count', 'is_active',
+        'view_count', 'application_count', 'is_active',
         'days_until_deadline', 'created_at', 'updated_at'
     ]
     prepopulated_fields = {'slug': ('title',)}
@@ -349,7 +349,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     ]
     readonly_fields = [
         'application_id', 'can_be_edited', 'is_successful',
-        'days_since_submission', 'created_at', 'updated_at'
+        'days_since_submission', 'created_at', 'updated_at', 'last_modified_date'
     ]
     
     fieldsets = (

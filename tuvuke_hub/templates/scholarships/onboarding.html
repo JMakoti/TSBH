@@ -432,7 +432,7 @@
 class OnboardingManager {
     constructor() {
         this.currentStep = {{ current_step }};
-        this.totalSteps = {{ total_steps }};
+        this.totalSteps = {{ total_steps|default:0 }};
         this.form = document.getElementById('onboardingForm');
         this.loadingSpinner = document.getElementById('loadingSpinner');
         this.initializeEventListeners();

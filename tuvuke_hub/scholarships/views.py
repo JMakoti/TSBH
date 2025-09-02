@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import View, ListView
+from django.views.generic import View, ListView, DetailView
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
@@ -25,7 +25,7 @@ from .forms import (
     QuickRegistrationForm, 
     StudentSearchForm
 )
-from .models import Student, County, Scholarship, Provider
+from .models import Student, County, Scholarship, Provider, Application
 from .access_control import (
     StudentRequiredMixin, ProviderRequiredMixin, StaffRequiredMixin,
     student_required, provider_required, staff_required,
@@ -1358,3 +1358,124 @@ def calculate_profile_completion_percentage(student):
             completed_fields += 1
     
     return round((completed_fields / len(required_fields)) * 100)
+
+
+class ScholarshipDetailView(DetailView):
+    """
+    Detail view for individual scholarships with application functionality
+    """
+    model = Scholarship
+    template_name = 'scholarships/scholarship_detail.html'
+    context_object_name = 'scholarship'
+    slug_field = 'slug'
+    
+    def get_queryset(self):
+        """Only show active scholarships"""
+        return Scholarship.objects.filter(
+            status='active',
+            is_active=True
+        ).select_related('provider').prefetch_related('target_counties')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scholarship = self.get_object()
+        
+        # Add user-specific context
+        if self.request.user.is_authenticated:
+            try:
+                student = self.request.user.student_profile
+                
+                # Check if already applied
+                has_applied = Application.objects.filter(
+                    student=student,
+                    scholarship=scholarship
+                ).exists()
+                
+                # Calculate match score
+                match_score = student.calculate_match_score(scholarship)
+                
+                context.update({
+                    'student': student,
+                    'has_applied': has_applied,
+                    'match_score': match_score,
+                    'is_eligible': match_score > 0,
+                })
+            except AttributeError:
+                context.update({
+                    'student': None,
+                    'has_applied': False,
+                    'match_score': 0,
+                    'is_eligible': False,
+                })
+        
+        return context
+
+
+@login_required
+def scholarship_apply_view(request, slug):
+    """
+    Handle scholarship application
+    """
+    scholarship = get_object_or_404(
+        Scholarship,
+        slug=slug,
+        status='active'
+    )
+    
+    try:
+        student = request.user.student_profile
+    except AttributeError:
+        messages.error(request, "Please complete your student profile before applying.")
+        return redirect('scholarships:student_profile')
+    
+    # Check if already applied
+    existing_application = Application.objects.filter(
+        student=student,
+        scholarship=scholarship
+    ).first()
+    
+    if existing_application:
+        messages.info(
+            request, 
+            f'You have already applied for "{scholarship.title}". '
+            f'Application status: {existing_application.get_status_display()}'
+        )
+        return redirect('scholarships:scholarship_detail', slug=slug)
+    
+    if request.method == 'POST':
+        try:
+            # Create new application
+            application = Application.objects.create(
+                student=student,
+                scholarship=scholarship,
+                status='draft',
+                personal_statement=request.POST.get('personal_statement', ''),
+                motivation_letter=request.POST.get('motivation_letter', ''),
+                career_goals=request.POST.get('career_goals', ''),
+                special_circumstances=request.POST.get('special_circumstances', ''),
+                created_at=timezone.now()
+            )
+            
+            messages.success(
+                request,
+                f'Your application for "{scholarship.title}" has been submitted successfully! '
+                f'You will receive updates on your application status via email.'
+            )
+            
+            return redirect('scholarships:student_dashboard')
+            
+        except Exception as e:
+            messages.error(
+                request,
+                f'There was an error submitting your application: {str(e)}. '
+                f'Please try again or contact support.'
+            )
+            return redirect('scholarships:scholarship_detail', slug=slug)
+    
+    # GET request - show application form
+    context = {
+        'scholarship': scholarship,
+        'student': student,
+    }
+    
+    return render(request, 'scholarships/scholarship_apply.html', context)

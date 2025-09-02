@@ -392,7 +392,7 @@ def htmx_scholarship_quick_view(request, scholarship_id):
     try:
         scholarship = Scholarship.objects.select_related('provider').prefetch_related(
             'target_counties'
-        ).get(id=scholarship_id, is_active=True)
+        ).get(id=scholarship_id, status='active')
         
         # Calculate match score if user is authenticated
         match_score = None

@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ scholarship.title }} - Tuvuke Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+.scholarship-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.scholarship-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.scholarship-amount {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 1rem 0;
+}
+
+.match-score {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.eligibility-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.eligibility-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.timeline-icon {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: #6c757d;
+}
+
+.provider-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Scholarship Header -->
+<div class="scholarship-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="scholarship-badge">
+                    {{ scholarship.get_scholarship_type_display }}
+                </div>
+                <h1 class="display-5 mb-3">{{ scholarship.title }}</h1>
+                <p class="lead">{{ scholarship.description|truncatewords:30 }}</p>
+                <div class="scholarship-amount">
+                    KES {{ scholarship.amount_per_beneficiary|floatformat:0 }}
+                    {% if scholarship.coverage_type == 'full_scholarship' %}
+                        <small class="text-light">(Full Scholarship)</small>
+                    {% elif scholarship.coverage_type == 'partial_scholarship' %}
+                        <small class="text-light">(Partial Scholarship)</small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                {% if scholarship.days_until_deadline <= 7 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock"></i>
+                        Only {{ scholarship.days_until_deadline }} days left to apply!
+                    </div>
+                {% elif scholarship.days_until_deadline <= 30 %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-calendar"></i>
+                        {{ scholarship.days_until_deadline }} days left to apply
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Match Score (for authenticated students) -->
+            {% if user.is_authenticated and student and match_score > 0 %}
+            <div class="match-score">
+                <h5 class="mb-2">Your Match Score</h5>
+                <div class="h3 mb-2">{{ match_score }}%</div>
+                <p class="mb-0">
+                    {% if match_score >= 80 %}
+                        Excellent match! You meet most requirements.
+                    {% elif match_score >= 60 %}
+                        Good match! You meet many requirements.
+                    {% elif match_score >= 40 %}
+                        Fair match. Review requirements carefully.
+                    {% else %}
+                        Limited match. Consider other opportunities.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>About This Scholarship</h4>
+                </div>
+                <div class="card-body">
+                    <p>{{ scholarship.description }}</p>
+                </div>
+            </div>
+
+            <!-- Eligibility Criteria -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>Eligibility Criteria</h4>
+                </div>
+                <div class="card-body">
+                    {% if scholarship.eligibility_criteria %}
+                        <div class="eligibility-list">
+                            {% for key, value in scholarship.eligibility_criteria.items %}
+                                <div class="eligibility-item">
+                                    <strong>{{ key|title|replace:"_":" " }}:</strong>
+                                    {% if value is dict %}
+                                        <ul class="ms-3">
+                                            {% for sub_key, sub_value in value.items %}
+                                                <li>{{ sub_key|title|replace:"_":" " }}: {{ sub_value }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Standard criteria -->
+                    <div class="row mt-3">
+                        {% if scholarship.minimum_age %}
+                        <div class="col-md-6">
+                            <div class="eligibility-item">
+                                <strong>Minimum Age:</strong> {{ scholarship.minimum_age }} years
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if scholarship.maximum_age %}
+                        <div class="col-md-6">
+                            <div class="eligibility-item">
+                                <strong>Maximum Age:</strong> {{ scholarship.maximum_age }} years
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if scholarship.minimum_gpa %}
+                        <div class="col-md-6">
+                            <div class="eligibility-item">
+                                <strong>Minimum GPA:</strong> {{ scholarship.minimum_gpa }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if scholarship.minimum_percentage %}
+                        <div class="col-md-6">
+                            <div class="eligibility-item">
+                                <strong>Minimum Percentage:</strong> {{ scholarship.minimum_percentage }}%
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if scholarship.maximum_family_income %}
+                        <div class="col-md-12">
+                            <div class="eligibility-item">
+                                <strong>Maximum Family Income:</strong> KES {{ scholarship.maximum_family_income|floatformat:0 }} annually
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Documents -->
+            {% if scholarship.required_documents %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-file-alt me-2"></i>Required Documents</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for document in scholarship.required_documents %}
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            {{ document }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Application Timeline -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Important Dates</h4>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div>
+                            <strong>Application Opens:</strong><br>
+                            {{ scholarship.application_start_date|date:"F d, Y" }}
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-stop"></i>
+                        </div>
+                        <div>
+                            <strong>Application Deadline:</strong><br>
+                            {{ scholarship.application_deadline|date:"F d, Y g:i A" }}
+                        </div>
+                    </div>
+                    {% if scholarship.selection_end_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div>
+                            <strong>Selection Complete:</strong><br>
+                            {{ scholarship.selection_end_date|date:"F d, Y" }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if scholarship.award_notification_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <strong>Results Notification:</strong><br>
+                            {{ scholarship.award_notification_date|date:"F d, Y" }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Application Action -->
+            <div class="card mb-4">
+                <div class="card-header text-center">
+                    <h5 class="mb-0">Application Status</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if user.is_authenticated %}
+                        {% if has_applied %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                You have already applied for this scholarship!
+                            </div>
+                            <a href="{% url 'scholarships:student_dashboard' %}" class="btn btn-primary">
+                                <i class="fas fa-tachometer-alt me-1"></i>
+                                View Dashboard
+                            </a>
+                        {% else %}
+                            {% if scholarship.application_deadline > now %}
+                                <p class="text-muted mb-3">Ready to apply? Click below to submit your application.</p>
+                                <a href="{% url 'scholarships:scholarship_apply' scholarship.slug %}" 
+                                   class="btn btn-success btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    Apply Now
+                                </a>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-clock"></i>
+                                    Application deadline has passed
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted mb-3">Please log in to apply for this scholarship.</p>
+                        <a href="{% url 'scholarships:login' %}?next={{ request.path }}" 
+                           class="btn btn-primary btn-lg mb-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Login to Apply
+                        </a>
+                        <div class="mt-2">
+                            <small>Don't have an account?</small><br>
+                            <a href="{% url 'scholarships:register' %}">Register here</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Provider Information -->
+            <div class="provider-info">
+                <h5 class="mb-3">
+                    <i class="fas fa-building me-2"></i>
+                    About the Provider
+                </h5>
+                <h6>{{ scholarship.provider.name }}</h6>
+                <p class="text-muted small">{{ scholarship.provider.description|truncatewords:20 }}</p>
+                
+                {% if scholarship.provider.website %}
+                <a href="{{ scholarship.provider.website }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>
+                    Visit Website
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Scholarship Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Scholarship Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h4 text-primary">{{ scholarship.number_of_awards }}</div>
+                            <small class="text-muted">Awards Available</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success">{{ scholarship.application_count }}</div>
+                            <small class="text-muted">Applications</small>
+                        </div>
+                    </div>
+                    
+                    {% if scholarship.renewable %}
+                    <div class="mt-3 text-center">
+                        <span class="badge bg-info">Renewable</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any JavaScript functionality here
+});
+</script>
+{% endblock %}

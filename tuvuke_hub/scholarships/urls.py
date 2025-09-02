@@ -53,6 +53,8 @@ urlpatterns = [
     # Public URLs (no authentication required)
     path('search/', views.search_students, name='search_students'),
     path('scholarships/', views.ScholarshipListView.as_view(), name='scholarship_list'),
+    path('scholarships/<slug:slug>/', views.ScholarshipDetailView.as_view(), name='scholarship_detail'),
+    path('scholarships/<slug:slug>/apply/', views.scholarship_apply_view, name='scholarship_apply'),
     path('', views_htmx.scholarship_search_homepage, name='search_homepage'),
     
     # HTMX endpoints
