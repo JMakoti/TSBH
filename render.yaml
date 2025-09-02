@@ -4,7 +4,6 @@ services:
     name: tuvuke-hub-db
     env: postgresql
     plan: free
-    ipAllowList: []
 
   # Web Service
   - type: web
@@ -23,11 +22,14 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromService:
-          type: pserv
+        fromDatabase:
           name: tuvuke-hub-db
           property: connectionString
       - key: DEBUG
         value: False
       - key: ALLOWED_HOSTS
         value: tuvuke-hub.onrender.com,.onrender.com
+
+databases:
+  - name: tuvuke-hub-db
+    plan: free
